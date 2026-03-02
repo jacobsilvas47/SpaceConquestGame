@@ -9,6 +9,23 @@ public class ResourceManager : MonoBehaviour
     public double crystal;
     public double gas;
 
+    [Header("Ships")]
+    public int smallCargo = 0;
+    public int largeCargo = 0;
+
+    [Header("Ships Busy (on missions)")]
+    public int probesBusy = 0;
+    public int smallCargoBusy = 0;
+    public int largeCargoBusy = 0;
+
+    [Header("Ship Costs (metal only, for now)")]
+    public int smallCargoCostMetal = 200;
+    public int largeCargoCostMetal = 600;
+
+    [Header("Ship Cargo Capacity")]
+    public int smallCargoCapacity = 500;
+    public int largeCargoCapacity = 2000;
+
     [Header("Costs")] // Build Costs
     public int refineryCostMetal = 50; // Metal
     public int crystalMineCostMetal = 75; // Crystal
@@ -33,7 +50,21 @@ public class ResourceManager : MonoBehaviour
     public TextMeshProUGUI metalText;
     public TextMeshProUGUI crystalText;
     public TextMeshProUGUI gasText;
-    public TextMeshProUGUI probeText;
+
+    [Header("Ship UI Text")]
+    public TextMeshProUGUI probesText;
+    public TextMeshProUGUI smallCargoText;
+    public TextMeshProUGUI largeCargoText;
+
+    [Header("Cargo Build UI")]
+    public Button buildSmallCargoButton;
+    public Button buildLargeCargoButton;
+    public TextMeshProUGUI smallCargoCostText;
+    public TextMeshProUGUI largeCargoCostText;
+
+    [Header("Cargo Row UI")]
+    public TextMeshProUGUI smallCargoOwnedText;
+    public TextMeshProUGUI largeCargoOwnedText;
 
     [Header("Build UI")]
     public Button buildRefineryButton;
@@ -89,12 +120,9 @@ void Start()
     if (closeBuildButton) closeBuildButton.onClick.AddListener(CloseBuild);
     if (closeFleetButton) closeFleetButton.onClick.AddListener(CloseFleet);
 
-    // Fighter build
-    if (buildBasicFighterButton)
-        buildBasicFighterButton.onClick.AddListener(TryBuildBasicFighter);
-
     UpdateUI();
     RefreshBasicFighterRow();
+    RefreshCargoRows();
 }
 
     void Update()
@@ -110,6 +138,10 @@ void Start()
         UpdateUI();
     }
 
+    public int ProbesAvailable()     => Mathf.Max(0, probes - probesBusy);
+    public int SmallCargoAvailable() => Mathf.Max(0, smallCargo - smallCargoBusy);
+    public int LargeCargoAvailable() => Mathf.Max(0, largeCargo - largeCargoBusy);
+
     void UpdateUI()
     {
         double metalPerSec = GetMetalPerSecond();
@@ -120,7 +152,22 @@ void Start()
         if (metalText) metalText.text = $"Metal: {System.Math.Floor(metal)}";
         if (crystalText) crystalText.text = $"Crystal: {System.Math.Floor(crystal)}";
         if (gasText) gasText.text = $"Gas: {System.Math.Floor(gas)}";
-        if (probeText) probeText.text = $"Probes: {probes}  ({probeCountMult:0.##}x)";
+        
+        if (probesText)
+    {
+        probesText.text = $"Probes: {ProbesAvailable()}/{probes} (busy {probesBusy}) ({probeCountMult:0.##}x)";
+    }
+        if (smallCargoText) smallCargoText.text = $"Small Cargo: {SmallCargoAvailable()} (busy {smallCargoBusy})";
+        if (largeCargoText) largeCargoText.text = $"Large Cargo: {LargeCargoAvailable()} (busy {largeCargoBusy})";
+
+        if (smallCargoCostText) smallCargoCostText.text = $"Cost: {smallCargoCostMetal} Metal";
+        if (largeCargoCostText) largeCargoCostText.text = $"Cost: {largeCargoCostMetal} Metal";
+
+        if (buildSmallCargoButton)
+            buildSmallCargoButton.interactable = System.Math.Floor(metal) >= smallCargoCostMetal;
+
+        if (buildLargeCargoButton)
+            buildLargeCargoButton.interactable = System.Math.Floor(metal) >= largeCargoCostMetal;
 
         if (metalRateText) metalRateText.text = $"Metal/s: {metalPerSec:0.##}";
         if (crystalRateText) crystalRateText.text = $"Crystal/s: {crystalPerSec:0.##}";
@@ -144,6 +191,7 @@ void Start()
             gasExtractorCostText.text = $"Cost: {gasExtractorCostMetal} Metal";
 
         RefreshBasicFighterRow();
+        RefreshCargoRows();
     }
 
     // Building Methods
@@ -263,6 +311,56 @@ public void TryBuildBasicFighter()
     RefreshBasicFighterRow();
 }
 
+public void TryBuildSmallCargo()
+{
+    if (System.Math.Floor(metal) < smallCargoCostMetal)
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.color = Color.red;
+            actionStatusText.text = "Not enough Metal for Small Cargo";
+        }
+        return;
+    }
+
+    metal -= smallCargoCostMetal;
+    smallCargo += 1;
+
+    if (actionStatusText)
+    {
+        actionStatusText.color = Color.green;
+        actionStatusText.text = "Small Cargo Built";
+    }
+
+    UpdateUI();
+    RefreshCargoRows();
+}
+
+public void TryBuildLargeCargo()
+{
+    if (System.Math.Floor(metal) < largeCargoCostMetal)
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.color = Color.red;
+            actionStatusText.text = "Not enough Metal for Large Cargo";
+        }
+        return;
+    }
+
+    metal -= largeCargoCostMetal;
+    largeCargo += 1;
+
+    if (actionStatusText)
+    {
+        actionStatusText.color = Color.green;
+        actionStatusText.text = "Large Cargo Built";
+    }
+
+    UpdateUI();
+    RefreshCargoRows();
+}
+
 void RefreshBasicFighterRow()
 {
     if (basicFighterCostText)
@@ -274,6 +372,12 @@ void RefreshBasicFighterRow()
     if (buildBasicFighterButton)
         buildBasicFighterButton.interactable =
             System.Math.Floor(metal) >= basicFighterCostMetal;
+}
+
+void RefreshCargoRows()
+{
+    if (smallCargoOwnedText) smallCargoOwnedText.text = $"Owned: {smallCargo}";
+    if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {largeCargo}";
 }
 
 public void OpenBuild()

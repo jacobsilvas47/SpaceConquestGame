@@ -54,10 +54,36 @@ public class ResourceManager : MonoBehaviour
     public double bonusPerExtraProbe = 0.02; // 2% per probe after startingProbes
     public double maxProbeMultiplier = 5.0;  // optional cap, keeps things sane
 
+   [Header("Fleet UI")]
+    public GameObject fleetPanel;
+    public UnityEngine.UI.Button fleetButton;
+    public UnityEngine.UI.Button closeFleetButton;
+
+    public UnityEngine.UI.Button buildBasicFighterButton;   
+
+    public TMPro.TextMeshProUGUI basicFighterOwnedText;
+    public TMPro.TextMeshProUGUI basicFighterCostText;
+
+    [Header("Fleet")]
+    public int basicFighters = 0;
+    public int basicFighterCostMetal = 50;
+
     void Start()
-    {
-        UpdateUI(); // so cost text shows immediately on play
-    }
+{
+    // Make sure Fleet panel starts hidden
+    if (fleetPanel) fleetPanel.SetActive(false);
+
+    // Hook up Fleet open / close buttons
+    if (fleetButton) fleetButton.onClick.AddListener(OpenFleetPanel);
+    if (closeFleetButton) closeFleetButton.onClick.AddListener(CloseFleetPanel);
+
+    // Hook up Basic Fighter build button
+    if (buildBasicFighterButton)
+        buildBasicFighterButton.onClick.AddListener(TryBuildBasicFighter);
+
+    UpdateUI();                 // your existing UI update
+    RefreshBasicFighterRow();   // update fleet row immediately
+}
 
     void Update()
     {
@@ -104,6 +130,8 @@ public class ResourceManager : MonoBehaviour
 
         if (gasExtractorCostText)
             gasExtractorCostText.text = $"Cost: {gasExtractorCostMetal} Metal";
+
+            RefreshBasicFighterRow();
     }
 
     // Building Methods
@@ -201,6 +229,42 @@ public void TryBuildProbe()
     UpdateUI(); // if you already have this function, keep using it
 }
 
+// Build Basic Fighter
+public void OpenFleetPanel()
+{
+    if (fleetPanel) fleetPanel.SetActive(true);
+}
+
+public void CloseFleetPanel()
+{
+    if (fleetPanel) fleetPanel.SetActive(false);
+}
+
+public void TryBuildBasicFighter()
+{
+    if (System.Math.Floor(metal) < basicFighterCostMetal)
+        return;
+
+    metal -= basicFighterCostMetal;
+    basicFighters += 1;
+
+    UpdateUI();
+    RefreshBasicFighterRow();
+}
+
+void RefreshBasicFighterRow()
+{
+    if (basicFighterCostText)
+        basicFighterCostText.text = $"Cost: {basicFighterCostMetal} Metal";
+
+    if (basicFighterOwnedText)
+        basicFighterOwnedText.text = $"Owned: {basicFighters}";
+
+    if (buildBasicFighterButton)
+        buildBasicFighterButton.interactable =
+            System.Math.Floor(metal) >= basicFighterCostMetal;
+}
+
     double GetMetalPerSecond()
 {
     double probeMult = GetProbeCountMultiplier() * probeEfficiencyMult * globalEconomyMult;
@@ -211,6 +275,7 @@ public void TryBuildProbe()
 
     return probeIncome + buildingIncome;
 }
+
 
 double GetCrystalPerSecond()
 {

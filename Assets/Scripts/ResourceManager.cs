@@ -68,21 +68,33 @@ public class ResourceManager : MonoBehaviour
     public int basicFighters = 0;
     public int basicFighterCostMetal = 50;
 
-    void Start()
+    [Header("Menu Panels")]
+    public GameObject buildPanel;
+
+    [Header("Menu Buttons")]
+    public Button buildMenuButton;
+    public Button closeBuildButton; 
+
+void Start()
 {
-    // Make sure Fleet panel starts hidden
+    // Start with clean screen
+    if (buildPanel) buildPanel.SetActive(false);
     if (fleetPanel) fleetPanel.SetActive(false);
 
-    // Hook up Fleet open / close buttons
-    if (fleetButton) fleetButton.onClick.AddListener(OpenFleetPanel);
-    if (closeFleetButton) closeFleetButton.onClick.AddListener(CloseFleetPanel);
+    // Open buttons
+    if (buildMenuButton) buildMenuButton.onClick.AddListener(OpenBuild);
+    if (fleetButton) fleetButton.onClick.AddListener(OpenFleet);
 
-    // Hook up Basic Fighter build button
+    // Close buttons
+    if (closeBuildButton) closeBuildButton.onClick.AddListener(CloseBuild);
+    if (closeFleetButton) closeFleetButton.onClick.AddListener(CloseFleet);
+
+    // Fighter build
     if (buildBasicFighterButton)
         buildBasicFighterButton.onClick.AddListener(TryBuildBasicFighter);
 
-    UpdateUI();                 // your existing UI update
-    RefreshBasicFighterRow();   // update fleet row immediately
+    UpdateUI();
+    RefreshBasicFighterRow();
 }
 
     void Update()
@@ -131,7 +143,7 @@ public class ResourceManager : MonoBehaviour
         if (gasExtractorCostText)
             gasExtractorCostText.text = $"Cost: {gasExtractorCostMetal} Metal";
 
-            RefreshBasicFighterRow();
+        RefreshBasicFighterRow();
     }
 
     // Building Methods
@@ -229,16 +241,15 @@ public void TryBuildProbe()
     UpdateUI(); // if you already have this function, keep using it
 }
 
-// Build Basic Fighter
-public void OpenFleetPanel()
+// Fleet
+public void OpenFleet()
 {
-    if (fleetPanel) fleetPanel.SetActive(true);
+    bool wasOpen = fleetPanel && fleetPanel.activeSelf;
+    CloseAllMenus();
+    if (fleetPanel) fleetPanel.SetActive(!wasOpen);
 }
 
-public void CloseFleetPanel()
-{
-    if (fleetPanel) fleetPanel.SetActive(false);
-}
+public void CloseFleet()     => CloseAllMenus();
 
 public void TryBuildBasicFighter()
 {
@@ -264,6 +275,21 @@ void RefreshBasicFighterRow()
         buildBasicFighterButton.interactable =
             System.Math.Floor(metal) >= basicFighterCostMetal;
 }
+
+public void OpenBuild()
+{
+    bool wasOpen = buildPanel && buildPanel.activeSelf;
+    CloseAllMenus();
+    if (buildPanel) buildPanel.SetActive(!wasOpen);
+}
+
+void CloseAllMenus()
+{
+    if (buildPanel) buildPanel.SetActive(false);
+    if (fleetPanel) fleetPanel.SetActive(false);
+}
+
+public void CloseBuild() => CloseAllMenus();
 
     double GetMetalPerSecond()
 {

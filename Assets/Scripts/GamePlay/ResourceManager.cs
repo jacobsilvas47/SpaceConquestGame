@@ -6,11 +6,34 @@ public class ResourceManager : MonoBehaviour
 {
     public GameStateHolder gameStateHolder;
     public string planetId = "home";
-    
-    [Header("Current Resources")]
-    public double metal;
-    public double crystal;
-    public double gas;
+
+    private PlanetState GetPlanet()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null) return null;
+        return gameStateHolder.state.GetPlanet(planetId);
+    }
+
+    private int GetTotalProbesFromGameState()
+{
+    if (gameStateHolder == null || gameStateHolder.state == null)
+        return probes; // fallback safety
+
+    var state = gameStateHolder.state;
+
+    int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
+    int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
+
+    return stationed + busy;
+}
+
+    private double MetalFloor()   => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().metal);
+    private double CrystalFloor() => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().crystal);
+    private double GasFloor()     => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().gas);
+        
+    [Header("Current Resources (Debug Mirror of Planet, do not spend from these)")]
+    [SerializeField] private double metal;
+    [SerializeField] private double crystal;
+    [SerializeField] private double gas;
 
     [Header("Ships")]
     public int smallCargo = 0;
@@ -134,17 +157,29 @@ void Start()
 }
 
     void Update()
+{
+    double metalPerSec = GetMetalPerSecond();
+    double crystalPerSec = GetCrystalPerSecond();
+    double gasPerSec = GetGasPerSecond();
+
+    var p = (gameStateHolder != null && gameStateHolder.state != null)
+        ? gameStateHolder.state.GetPlanet(planetId)
+        : null;
+
+    if (p != null)
     {
-        double metalPerSec = GetMetalPerSecond();
-        double crystalPerSec = GetCrystalPerSecond();
-        double gasPerSec = GetGasPerSecond();
+        p.metal += metalPerSec * Time.deltaTime;
+        p.crystal += crystalPerSec * Time.deltaTime;
+        p.gas += gasPerSec * Time.deltaTime;
 
-        metal += metalPerSec * Time.deltaTime;
-        crystal += crystalPerSec * Time.deltaTime;
-        gas += gasPerSec * Time.deltaTime;
-
-        UpdateUI();
+        // Mirror into inspector (debug)
+        metal = p.metal;
+        crystal = p.crystal;
+        gas = p.gas;
     }
+
+    UpdateUI();
+}
 
     public int ProbesAvailable()     => Mathf.Max(0, probes - probesBusy);
     public int SmallCargoAvailable() => Mathf.Max(0, smallCargo - smallCargoBusy);
@@ -157,9 +192,16 @@ void Start()
         double gasPerSec = GetGasPerSecond();
         double probeCountMult = GetProbeCountMultiplier();
 
-        if (metalText) metalText.text = $"Metal: {System.Math.Floor(metal)}";
-        if (crystalText) crystalText.text = $"Crystal: {System.Math.Floor(crystal)}";
-        if (gasText) gasText.text = $"Gas: {System.Math.Floor(gas)}";
+        if (gameStateHolder != null && gameStateHolder.state != null)
+    {
+        var p = gameStateHolder.state.GetPlanet(planetId);
+        if (p != null)
+        {
+            if (metalText) metalText.text = $"Metal: {System.Math.Floor(p.metal)}";
+            if (crystalText) crystalText.text = $"Crystal: {System.Math.Floor(p.crystal)}";
+            if (gasText) gasText.text = $"Gas: {System.Math.Floor(p.gas)}";
+        }
+    }
         
         if (probesText)
     {
@@ -181,10 +223,10 @@ void Start()
         if (largeCargoCostText) largeCargoCostText.text = $"Cost: {largeCargoCostMetal} Metal";
 
         if (buildSmallCargoButton)
-            buildSmallCargoButton.interactable = System.Math.Floor(metal) >= smallCargoCostMetal;
+            buildSmallCargoButton.interactable = MetalFloor() >= smallCargoCostMetal;
 
         if (buildLargeCargoButton)
-            buildLargeCargoButton.interactable = System.Math.Floor(metal) >= largeCargoCostMetal;
+            buildLargeCargoButton.interactable = MetalFloor() >= largeCargoCostMetal;
 
         if (metalRateText) metalRateText.text = $"Metal/s: {metalPerSec:0.##}";
         if (crystalRateText) crystalRateText.text = $"Crystal/s: {crystalPerSec:0.##}";
@@ -193,13 +235,13 @@ void Start()
         if (refineryCostText) refineryCostText.text = $"Cost: {refineryCostMetal} Metal";
 
         if (buildRefineryButton)
-            buildRefineryButton.interactable = System.Math.Floor(metal) >= refineryCostMetal;
+            buildRefineryButton.interactable   = MetalFloor() >= refineryCostMetal;
 
         if (buildCrystalMineButton)
-            buildCrystalMineButton.interactable = System.Math.Floor(metal) >= crystalMineCostMetal;
+            buildCrystalMineButton.interactable = MetalFloor() >= crystalMineCostMetal;
 
         if (buildGasExtractorButton)
-            buildGasExtractorButton.interactable = System.Math.Floor(metal) >= gasExtractorCostMetal;
+            buildGasExtractorButton.interactable = MetalFloor() >= gasExtractorCostMetal;
 
         if (crystalMineCostText)
             crystalMineCostText.text = $"Cost: {crystalMineCostMetal} Metal";
@@ -214,32 +256,10 @@ void Start()
     // Building Methods
     public void TryBuildRefinery()
 {
-    // use Floor so you can't spend "partial" metal like 49.7
-    if (System.Math.Floor(metal) < refineryCostMetal)
-    {
-        if (actionStatusText)
-        {
-            actionStatusText.color = Color.red;          
-            actionStatusText.text = "Not enough Metal";
-        }
-        return;
-    }
+    var p = GetPlanet();
+    if (p == null) return;
 
-    metal -= refineryCostMetal;
-    metalRefineries += 1;
-
-    if (actionStatusText)
-    {
-        actionStatusText.color = Color.green;           
-        actionStatusText.text = "Refinery built";
-    }
-
-    UpdateUI(); // instant feedback
-}
-
-public void TryBuildCrystalMine()
-{
-    if (System.Math.Floor(metal) < crystalMineCostMetal)
+    if (MetalFloor() < refineryCostMetal)
     {
         if (actionStatusText)
         {
@@ -249,7 +269,34 @@ public void TryBuildCrystalMine()
         return;
     }
 
-    metal -= crystalMineCostMetal;
+    p.metal -= refineryCostMetal;
+    metalRefineries += 1;
+
+    if (actionStatusText)
+    {
+        actionStatusText.color = Color.green;
+        actionStatusText.text = "Refinery built";
+    }
+
+    UpdateUI();
+}
+
+public void TryBuildCrystalMine()
+{
+    var p = GetPlanet();
+    if (p == null) return;
+
+    if (MetalFloor() < crystalMineCostMetal)
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.color = Color.red;
+            actionStatusText.text = "Not enough Metal";
+        }
+        return;
+    }
+
+    p.metal -= crystalMineCostMetal;
     crystalMines += 1;
 
     if (actionStatusText)
@@ -263,7 +310,10 @@ public void TryBuildCrystalMine()
 
 public void TryBuildGasExtractor()
 {
-    if (System.Math.Floor(metal) < gasExtractorCostMetal)
+    var p = GetPlanet();
+    if (p == null) return;
+
+    if (MetalFloor() < gasExtractorCostMetal)
     {
         if (actionStatusText)
         {
@@ -273,7 +323,7 @@ public void TryBuildGasExtractor()
         return;
     }
 
-    metal -= gasExtractorCostMetal;
+    p.metal -= gasExtractorCostMetal;
     gasExtractors += 1;
 
     if (actionStatusText)
@@ -287,23 +337,35 @@ public void TryBuildGasExtractor()
 
 public void TryBuildProbe()
 {
-    // Prevent spending partial resources if you're using doubles
-    if (System.Math.Floor(metal) < probeCostMetal ||
-        System.Math.Floor(crystal) < probeCostCrystal ||
-        System.Math.Floor(gas) < probeCostGas)
+    var p = GetPlanet();
+    if (p == null) return;
+
+    if (MetalFloor() < probeCostMetal ||
+        CrystalFloor() < probeCostCrystal ||
+        GasFloor() < probeCostGas)
     {
-        if (actionStatusText) actionStatusText.text = "Not enough resources";
+        if (actionStatusText)
+        {
+            actionStatusText.color = Color.red;
+            actionStatusText.text = "Not enough resources";
+        }
         return;
     }
 
-    metal -= probeCostMetal;
-    crystal -= probeCostCrystal;
-    gas -= probeCostGas;
+    p.metal -= probeCostMetal;
+    p.crystal -= probeCostCrystal;
+    p.gas -= probeCostGas;
 
-    probes += 1;
+    // Add probe to GameState (this is the important line)
+    p.AddStationed(ShipType.Probe, 1);
 
-    if (actionStatusText) actionStatusText.text = "Built 1 Probe";
-    UpdateUI(); // if you already have this function, keep using it
+    if (actionStatusText)
+    {
+        actionStatusText.color = Color.green;
+        actionStatusText.text = "Built 1 Probe";
+    }
+
+    UpdateUI();
 }
 
 // Fleet
@@ -318,11 +380,27 @@ public void CloseFleet()     => CloseAllMenus();
 
 public void TryBuildBasicFighter()
 {
-    if (System.Math.Floor(metal) < basicFighterCostMetal)
-        return;
+    var p = GetPlanet();
+    if (p == null) return;
 
-    metal -= basicFighterCostMetal;
+    if (MetalFloor() < basicFighterCostMetal)
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.color = Color.red;
+            actionStatusText.text = "Not enough Metal for Basic Fighter";
+        }
+        return;
+    }
+
+    p.metal -= basicFighterCostMetal;
     basicFighters += 1;
+
+    if (actionStatusText)
+    {
+        actionStatusText.color = Color.green;
+        actionStatusText.text = "Basic Fighter Built";
+    }
 
     UpdateUI();
     RefreshBasicFighterRow();
@@ -330,7 +408,10 @@ public void TryBuildBasicFighter()
 
 public void TryBuildSmallCargo()
 {
-    if (System.Math.Floor(metal) < smallCargoCostMetal)
+    var p = GetPlanet();
+    if (p == null) return;
+
+    if (MetalFloor() < smallCargoCostMetal)
     {
         if (actionStatusText)
         {
@@ -340,7 +421,7 @@ public void TryBuildSmallCargo()
         return;
     }
 
-    metal -= smallCargoCostMetal;
+    p.metal -= smallCargoCostMetal;
     smallCargo += 1;
 
     if (actionStatusText)
@@ -355,7 +436,10 @@ public void TryBuildSmallCargo()
 
 public void TryBuildLargeCargo()
 {
-    if (System.Math.Floor(metal) < largeCargoCostMetal)
+    var p = GetPlanet();
+    if (p == null) return;
+
+    if (MetalFloor() < largeCargoCostMetal)
     {
         if (actionStatusText)
         {
@@ -365,7 +449,7 @@ public void TryBuildLargeCargo()
         return;
     }
 
-    metal -= largeCargoCostMetal;
+    p.metal -= largeCargoCostMetal;
     largeCargo += 1;
 
     if (actionStatusText)
@@ -388,7 +472,7 @@ void RefreshBasicFighterRow()
 
     if (buildBasicFighterButton)
         buildBasicFighterButton.interactable =
-            System.Math.Floor(metal) >= basicFighterCostMetal;
+            MetalFloor() >= basicFighterCostMetal;
 }
 
 void RefreshCargoRows()
@@ -417,7 +501,9 @@ public void CloseBuild() => CloseAllMenus();
     double probeMult = GetProbeCountMultiplier() * probeEfficiencyMult * globalEconomyMult;
     double buildingMult = planetCollectionMult * globalEconomyMult;
 
-    double probeIncome = (probes * 0.2) * probeMult;
+    int totalProbes = GetTotalProbesFromGameState();
+    double probeIncome = (totalProbes * 0.2) * probeMult;
+
     double buildingIncome = (metalRefineries * 2.0) * buildingMult;
 
     return probeIncome + buildingIncome;
@@ -429,7 +515,9 @@ double GetCrystalPerSecond()
     double probeMult = GetProbeCountMultiplier() * probeEfficiencyMult * globalEconomyMult;
     double buildingMult = planetCollectionMult * globalEconomyMult;
 
-    double probeIncome = (probes * 0.1) * probeMult;
+    int totalProbes = GetTotalProbesFromGameState();
+    double probeIncome = (totalProbes * 0.1) * probeMult;
+
     double buildingIncome = (crystalMines * 1.5) * buildingMult;
 
     return probeIncome + buildingIncome;
@@ -440,7 +528,9 @@ double GetGasPerSecond()
     double probeMult = GetProbeCountMultiplier() * probeEfficiencyMult * globalEconomyMult;
     double buildingMult = planetCollectionMult * globalEconomyMult;
 
-    double probeIncome = (probes * 0.05) * probeMult;
+    int totalProbes = GetTotalProbesFromGameState();
+    double probeIncome = (totalProbes * 0.05) * probeMult;
+
     double buildingIncome = (gasExtractors * 1.0) * buildingMult;
 
     return probeIncome + buildingIncome;
@@ -448,9 +538,12 @@ double GetGasPerSecond()
 
     double GetProbeCountMultiplier()
 {
-    int extra = Mathf.Max(0, probes - startingProbes); // probes beyond baseline
-    double mult = 1.0 + (extra * bonusPerExtraProbe);  // linear gentle growth
-    return System.Math.Min(mult, maxProbeMultiplier);   // cap it
+    int totalProbes = GetTotalProbesFromGameState();
+
+    int extra = Mathf.Max(0, totalProbes - startingProbes);
+    double mult = 1.0 + (extra * bonusPerExtraProbe);
+
+    return System.Math.Min(mult, maxProbeMultiplier);
 }
 
 }

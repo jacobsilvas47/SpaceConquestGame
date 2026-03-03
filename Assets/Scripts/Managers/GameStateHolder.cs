@@ -33,8 +33,18 @@ public class GameStateHolder : MonoBehaviour
     var m = state.missions.Find(x => x != null && x.missionId == debugMissionIdToWatch);
     if (m != null && m.status != debugLastStatus)
         {
-        debugLastStatus = m.status;
-        Debug.Log($"Mission {m.missionId} status -> {m.status} (t={state.gameTime:F1})");
+            debugLastStatus = m.status;
+            Debug.Log($"Mission {m.missionId} status -> {m.status} (t={state.gameTime:F1})");
+
+    // 👇 ADD THIS: print expedition reward details when it completes
+    if (m.status == MissionStatus.Completed && m is ExpeditionMission exp)
+            {
+                var p = state.GetPlanet(exp.originPlanetId);
+                if (p != null)
+                {
+                    Debug.Log($"Expedition Result: {exp.outcomeSummary} | Totals: M={p.metal:F0} C={p.crystal:F0} G={p.gas:F0}");
+                }
+            }
         }
     }
 }

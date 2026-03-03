@@ -60,10 +60,16 @@ public static class MissionEngine
 
            if (m.status == MissionStatus.Returning && now >= m.returnTime)
             {
-            m.status = MissionStatus.Completed;
+                m.status = MissionStatus.Completed;
 
-            // Return the fleet to the origin planet
-            FleetReturner.ReturnFleetToOrigin(state, m.fleetId);
+                // If this is an expedition, resolve rewards
+                if (m is ExpeditionMission exp)
+                {
+                    ExpeditionResolver.Resolve(state, exp);
+                }
+
+                // Return the fleet to the origin planet
+                FleetReturner.ReturnFleetToOrigin(state, m.fleetId);
             }
         }
     }

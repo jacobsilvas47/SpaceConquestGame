@@ -1,8 +1,8 @@
-using UnityEngine;
-
 public enum ShipType
 {
     Probe,
+    SmallCargo,
+    LargeCargo,
     LightFighter,
     HeavyFighter,
     Cruiser,

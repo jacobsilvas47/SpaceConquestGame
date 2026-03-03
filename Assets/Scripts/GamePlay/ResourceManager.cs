@@ -29,7 +29,12 @@ public class ResourceManager : MonoBehaviour
     private double MetalFloor()   => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().metal);
     private double CrystalFloor() => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().crystal);
     private double GasFloor()     => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().gas);
-        
+
+    // Debug Headers
+    [Header("DEBUG CHEATS (Editor Only)")]
+    public double debugAddAmount = 50000;
+
+    // Headers
     [Header("Current Resources (Debug Mirror of Planet, do not spend from these)")]
     [SerializeField] private double metal;
     [SerializeField] private double crystal;
@@ -545,5 +550,26 @@ double GetGasPerSecond()
 
     return System.Math.Min(mult, maxProbeMultiplier);
 }
+
+// Debug Functions
+#if UNITY_EDITOR
+public void DebugAddResources()
+{
+    var p = GetPlanet();
+    if (p == null) return;
+
+    p.metal += debugAddAmount;
+    p.crystal += debugAddAmount;
+    p.gas += debugAddAmount;
+
+    if (actionStatusText)
+    {
+        actionStatusText.color = Color.yellow;
+        actionStatusText.text = $"Added {debugAddAmount} of each resource (DEBUG)";
+    }
+
+    UpdateUI();
+}
+#endif
 
 }

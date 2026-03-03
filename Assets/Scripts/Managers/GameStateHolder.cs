@@ -18,7 +18,6 @@ public class GameStateHolder : MonoBehaviour
 
         // give starting stationed probes (your “indestructible 5” can be handled later)
         state.planets[startingPlanetId].AddStationed(ShipType.Probe, 5);
-        Debug_Send10SecExpedition();
     }
 
     void Update()
@@ -36,13 +35,18 @@ public class GameStateHolder : MonoBehaviour
             debugLastStatus = m.status;
             Debug.Log($"Mission {m.missionId} status -> {m.status} (t={state.gameTime:F1})");
 
-    // 👇 ADD THIS: print expedition reward details when it completes
+    // Print expedition reward details when it completes
     if (m.status == MissionStatus.Completed && m is ExpeditionMission exp)
+    {
+        var p = state.GetPlanet(exp.originPlanetId);
+        if (p != null)
             {
-                var p = state.GetPlanet(exp.originPlanetId);
-                if (p != null)
-                {
-                    Debug.Log($"Expedition Result: {exp.outcomeSummary} | Totals: M={p.metal:F0} C={p.crystal:F0} G={p.gas:F0}");
+            Debug.Log($"Expedition Result: {exp.outcomeSummary} | Totals: M={p.metal:F0} C={p.crystal:F0} G={p.gas:F0}");
+
+            // TODO: put this into UI
+            // expeditionResultText.text = exp.outcomeSummary;  // if you have a TMP ref here
+            // OR
+            // lastExpeditionResult = exp.outcomeSummary;        // if you store it on the holder
                 }
             }
         }
@@ -67,6 +71,61 @@ public class GameStateHolder : MonoBehaviour
     int remainingProbes = state.planets[startingPlanetId].GetStationed(ShipType.Probe);
     Debug.Log($"Created fleet {fleetId} with 1 Probe. Remaining stationed probes: {remainingProbes}");
     }
+
+public void UI_SendExpedition()
+{
+    // For now, use the debug version, later we’ll pass a fleet composition
+    Debug_Send10SecExpedition();
+}
+
+public string SendExpedition(FleetComposition comp, double oneWaySeconds)
+{
+    if (comp == null || comp.TotalShips() <= 0)
+    {
+        Debug.Log("Cannot send expedition, fleet is empty.");
+        return null;
+    }
+
+    if (comp.probes > 0)
+    {
+        int availableProbes = GameStateQueries.GetStationedShips(state, startingPlanetId, ShipType.Probe);
+        if (comp.probes > availableProbes)
+        {
+            Debug.Log($"Not enough Probes. Requested {comp.probes}, have {availableProbes}.");
+            return null;
+        }
+
+        string fleetId = FleetFactory.TryCreateFleetFromPlanet(
+            state,
+            startingPlanetId,
+            ShipType.Probe,
+            comp.probes
+        );
+
+        if (fleetId == null)
+        {
+            Debug.Log("Failed to create fleet for expedition.");
+            return null;
+        }
+
+        string missionId = MissionEngine.TrySendExpedition(state, fleetId, oneWaySeconds);
+
+        if (missionId == null)
+        {
+            Debug.Log("Failed to send expedition mission.");
+            return null;
+        }
+
+        debugMissionIdToWatch = missionId;
+        debugLastStatus = MissionStatus.EnRoute;
+
+        Debug.Log($"Sent Expedition mission {missionId} using fleet {fleetId}. One-way: {oneWaySeconds} seconds.");
+        return missionId;
+    }
+
+    Debug.Log("Right now only probes are wired, add cargo ships next.");
+    return null;
+}
 
 public void Debug_Send10SecExpedition()
 {

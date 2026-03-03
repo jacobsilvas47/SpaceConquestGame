@@ -13,32 +13,30 @@ public static class ExpeditionResolver
         var planet = state.GetPlanet(mission.originPlanetId);
         if (planet == null) return;
 
-        // Deterministic-ish: use the mission seed so you can reproduce results later if you want
+        // Deterministic: use the mission seed so you can reproduce results later
         var rng = new System.Random(mission.seed);
+
+        int cap = mission.cargoCapacity;
+        if (cap <= 0) cap = 50;
 
         // Roll 0–99
         int roll = rng.Next(0, 100);
 
-        // Outcome buckets:
-        // 0-49  (50%) small metal
-        // 50-74 (25%) mixed
-        // 75-89 (15%) nothing
-        // 90-99 (10%) jackpot
         double metalGain = 0;
         double crystalGain = 0;
         double gasGain = 0;
 
         if (roll < 50)
         {
-            metalGain = rng.Next(10, 31); // 10-30
-            mission.outcomeSummary = $"Found scrap metal: +{metalGain} Metal";
+            metalGain = rng.Next((int)(cap * 0.05), (int)(cap * 0.15) + 1);
+            mission.outcomeSummary = $"Found scrap metal: +{metalGain:F0} Metal";
         }
         else if (roll < 75)
         {
-            metalGain = rng.Next(8, 21);    // 8-20
-            crystalGain = rng.Next(4, 13);  // 4-12
-            gasGain = rng.Next(2, 9);       // 2-8
-            mission.outcomeSummary = $"+{metalGain} Metal, +{crystalGain} Crystal, +{gasGain} Gas";
+            metalGain = rng.Next((int)(cap * 0.04), (int)(cap * 0.10) + 1);
+            crystalGain = rng.Next((int)(cap * 0.02), (int)(cap * 0.06) + 1);
+            gasGain = rng.Next((int)(cap * 0.01), (int)(cap * 0.04) + 1);
+            mission.outcomeSummary = $"+{metalGain:F0} Metal, +{crystalGain:F0} Crystal, +{gasGain:F0} Gas";
         }
         else if (roll < 90)
         {
@@ -46,13 +44,12 @@ public static class ExpeditionResolver
         }
         else
         {
-            metalGain = rng.Next(40, 81);    // 40-80
-            crystalGain = rng.Next(20, 51);  // 20-50
-            gasGain = rng.Next(10, 31);      // 10-30
-            mission.outcomeSummary = $"JACKPOT, +{metalGain} Metal, +{crystalGain} Crystal, +{gasGain} Gas";
+            metalGain = rng.Next((int)(cap * 0.25), (int)(cap * 0.50) + 1);
+            crystalGain = rng.Next((int)(cap * 0.15), (int)(cap * 0.30) + 1);
+            gasGain = rng.Next((int)(cap * 0.10), (int)(cap * 0.20) + 1);
+            mission.outcomeSummary = $"JACKPOT, +{metalGain:F0} Metal, +{crystalGain:F0} Crystal, +{gasGain:F0} Gas";
         }
 
-        // Apply gains
         planet.metal += metalGain;
         planet.crystal += crystalGain;
         planet.gas += gasGain;

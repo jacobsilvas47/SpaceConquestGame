@@ -4,6 +4,9 @@ using UnityEngine.UI;
 
 public class ResourceManager : MonoBehaviour
 {
+    public GameStateHolder gameStateHolder;
+    public string planetId = "home";
+    
     [Header("Current Resources")]
     public double metal;
     public double crystal;
@@ -120,6 +123,11 @@ void Start()
     if (closeBuildButton) closeBuildButton.onClick.AddListener(CloseBuild);
     if (closeFleetButton) closeFleetButton.onClick.AddListener(CloseFleet);
 
+    if (gameStateHolder == null)
+{
+    gameStateHolder = FindFirstObjectByType<GameStateHolder>();
+}
+
     UpdateUI();
     RefreshBasicFighterRow();
     RefreshCargoRows();
@@ -155,7 +163,16 @@ void Start()
         
         if (probesText)
     {
-        probesText.text = $"Probes: {ProbesAvailable()}/{probes} (busy {probesBusy}) ({probeCountMult:0.##}x)";
+        if (gameStateHolder != null && gameStateHolder.state != null)
+        {
+        var state = gameStateHolder.state;
+
+        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
+        int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
+        int total = stationed + busy;
+
+        probesText.text = $"Probes: {stationed}/{total} (busy {busy}) ({probeCountMult:0.##}x)";
+        }
     }
         if (smallCargoText) smallCargoText.text = $"Small Cargo: {SmallCargoAvailable()} (busy {smallCargoBusy})";
         if (largeCargoText) largeCargoText.text = $"Large Cargo: {LargeCargoAvailable()} (busy {largeCargoBusy})";

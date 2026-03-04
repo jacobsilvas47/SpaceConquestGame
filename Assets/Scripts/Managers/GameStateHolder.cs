@@ -86,45 +86,26 @@ public string SendExpedition(FleetComposition comp, double oneWaySeconds)
         return null;
     }
 
-    if (comp.probes > 0)
+    // ✅ Create ONE fleet containing all ship types in comp
+    string fleetId = FleetFactory.TryCreateFleetFromPlanet(state, startingPlanetId, comp);
+    if (fleetId == null)
     {
-        int availableProbes = GameStateQueries.GetStationedShips(state, startingPlanetId, ShipType.Probe);
-        if (comp.probes > availableProbes)
-        {
-            Debug.Log($"Not enough Probes. Requested {comp.probes}, have {availableProbes}.");
-            return null;
-        }
-
-        string fleetId = FleetFactory.TryCreateFleetFromPlanet(
-            state,
-            startingPlanetId,
-            ShipType.Probe,
-            comp.probes
-        );
-
-        if (fleetId == null)
-        {
-            Debug.Log("Failed to create fleet for expedition.");
-            return null;
-        }
-
-        string missionId = MissionEngine.TrySendExpedition(state, fleetId, oneWaySeconds);
-
-        if (missionId == null)
-        {
-            Debug.Log("Failed to send expedition mission.");
-            return null;
-        }
-
-        debugMissionIdToWatch = missionId;
-        debugLastStatus = MissionStatus.EnRoute;
-
-        Debug.Log($"Sent Expedition mission {missionId} using fleet {fleetId}. One-way: {oneWaySeconds} seconds.");
-        return missionId;
+        Debug.Log("Failed to create fleet for expedition (not enough stationed ships?).");
+        return null;
     }
 
-    Debug.Log("Right now only probes are wired, add cargo ships next.");
-    return null;
+    string missionId = MissionEngine.TrySendExpedition(state, fleetId, oneWaySeconds);
+    if (missionId == null)
+    {
+        Debug.Log("Failed to send expedition mission.");
+        return null;
+    }
+
+    debugMissionIdToWatch = missionId;
+    debugLastStatus = MissionStatus.EnRoute;
+
+    Debug.Log($"Sent Expedition mission {missionId} using fleet {fleetId}. One-way: {oneWaySeconds} seconds.");
+    return missionId;
 }
 
 public void Debug_Send10SecExpedition()

@@ -43,8 +43,8 @@ public static class MissionEngine
 
     var mission = new ExpeditionMission(fleet.originPlanetId, fleetId, seed);
 
-    mission.cargoCapacity = FleetStats.GetCargoCapacity(state, fleetId);
-
+    int cap = fleet.TotalCargoCapacity();
+    
     double now = state.gameTime;
     mission.departTime = now;
     mission.arriveTime = now + durationSeconds;

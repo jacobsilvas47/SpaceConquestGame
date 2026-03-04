@@ -181,12 +181,22 @@ public class ExpeditionPanelUI : MonoBehaviour
             return;
         }
 
-        // For now only probes are supported by your SendExpedition() logic
-        var comp = new FleetComposition { probes = probes };
+        var comp = new FleetComposition
+        {
+            probes = probes,
+            smallCargo = smallCargo,
+            largeCargo = largeCargo
+        };
 
         double oneWaySeconds = 5;
 
+        // 🔎 DEBUG HERE
+        var p = gameStateHolder.state.GetPlanet(gameStateHolder.startingPlanetId);
+        Debug.Log($"Stationed BEFORE send: P={p.GetStationed(ShipType.Probe)} SC={p.GetStationed(ShipType.SmallCargo)} LC={p.GetStationed(ShipType.LargeCargo)}");
+        Debug.Log($"Requested: P={probes} SC={smallCargo} LC={largeCargo}");
+
         string missionId = gameStateHolder.SendExpedition(comp, oneWaySeconds);
+
         if (string.IsNullOrEmpty(missionId))
         {
             if (statusText) statusText.text = "Failed to send expedition.";

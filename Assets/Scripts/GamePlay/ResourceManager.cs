@@ -427,7 +427,7 @@ public void TryBuildSmallCargo()
     }
 
     p.metal -= smallCargoCostMetal;
-    smallCargo += 1;
+    p.AddStationed(ShipType.SmallCargo, 1);
 
     if (actionStatusText)
     {
@@ -455,7 +455,7 @@ public void TryBuildLargeCargo()
     }
 
     p.metal -= largeCargoCostMetal;
-    largeCargo += 1;
+    p.AddStationed(ShipType.LargeCargo, 1);
 
     if (actionStatusText)
     {
@@ -482,8 +482,14 @@ void RefreshBasicFighterRow()
 
 void RefreshCargoRows()
 {
-    if (smallCargoOwnedText) smallCargoOwnedText.text = $"Owned: {smallCargo}";
-    if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {largeCargo}";
+    var p = GetPlanet();
+    if (p == null) return;
+
+    int sc = p.GetStationed(ShipType.SmallCargo);
+    int lc = p.GetStationed(ShipType.LargeCargo);
+
+    if (smallCargoOwnedText) smallCargoOwnedText.text = $"Owned: {sc}";
+    if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {lc}";
 }
 
 public void OpenBuild()

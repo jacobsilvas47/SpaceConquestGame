@@ -25,6 +25,18 @@ public class Fleet
         return ships.TryGetValue(type, out int count) ? count : 0;
     }
 
+    public int TotalCargoCapacity()
+    {
+        int total = 0;
+
+        foreach (var kvp in ships)
+    {
+        total += kvp.Value * ShipStats.CargoCapacity(kvp.Key);
+    }
+
+    return total;
+    }
+
     public void AddShips(ShipType type, int amount)
     {
         if (amount <= 0) return;

@@ -1,10 +1,15 @@
+using System;
+
 public enum ShipType
 {
     Probe,
     SmallCargo,
     LargeCargo,
-    LightFighter,
-    HeavyFighter,
+
+    BasicFighter,
+    AdvancedFighter,
+    SupremeFighter,
+
     Cruiser,
     Battleship,
     ColonyShip,

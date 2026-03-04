@@ -38,16 +38,25 @@ public static class FleetFactory
         if (planet.GetStationed(ShipType.SmallCargo) < comp.smallCargo) return null;
         if (planet.GetStationed(ShipType.LargeCargo) < comp.largeCargo) return null;
 
+        // ✅ ADD: validate BasicFighter availability
+        if (planet.GetStationed(ShipType.BasicFighter) < comp.basicFighters) return null;
+
         // Remove stationed ships (fail-safe)
         if (comp.probes > 0 && !planet.RemoveStationed(ShipType.Probe, comp.probes)) return null;
         if (comp.smallCargo > 0 && !planet.RemoveStationed(ShipType.SmallCargo, comp.smallCargo)) return null;
         if (comp.largeCargo > 0 && !planet.RemoveStationed(ShipType.LargeCargo, comp.largeCargo)) return null;
 
+        // ✅ ADD: remove stationed BasicFighter
+        if (comp.basicFighters > 0 && !planet.RemoveStationed(ShipType.BasicFighter, comp.basicFighters)) return null;
+
         // Create fleet and add ships
         var fleet = new Fleet(planetId);
-        fleet.AddShips(ShipType.Probe, comp.probes);
-        fleet.AddShips(ShipType.SmallCargo, comp.smallCargo);
-        fleet.AddShips(ShipType.LargeCargo, comp.largeCargo);
+        if (comp.probes > 0) fleet.AddShips(ShipType.Probe, comp.probes);
+        if (comp.smallCargo > 0) fleet.AddShips(ShipType.SmallCargo, comp.smallCargo);
+        if (comp.largeCargo > 0) fleet.AddShips(ShipType.LargeCargo, comp.largeCargo);
+
+        // ✅ ADD: add BasicFighter to fleet
+        if (comp.basicFighters > 0) fleet.AddShips(ShipType.BasicFighter, comp.basicFighters);
 
         // Store fleet
         state.fleets[fleet.fleetId] = fleet;

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -40,6 +41,7 @@ public class ResourceManager : MonoBehaviour
     [SerializeField] private double crystal;
     [SerializeField] private double gas;
 
+    /*
     [Header("Ships")]
     public int smallCargo = 0;
     public int largeCargo = 0;
@@ -48,6 +50,7 @@ public class ResourceManager : MonoBehaviour
     public int probesBusy = 0;
     public int smallCargoBusy = 0;
     public int largeCargoBusy = 0;
+    */
 
     [Header("Ship Costs (metal only, for now)")]
     public int smallCargoCostMetal = 200;
@@ -127,7 +130,6 @@ public class ResourceManager : MonoBehaviour
     public TMPro.TextMeshProUGUI basicFighterCostText;
 
     [Header("Fleet")]
-    public int basicFighters = 0;
     public int basicFighterCostMetal = 50;
 
     [Header("Menu Panels")]
@@ -186,9 +188,35 @@ void Start()
     UpdateUI();
 }
 
-    public int ProbesAvailable()     => Mathf.Max(0, probes - probesBusy);
-    public int SmallCargoAvailable() => Mathf.Max(0, smallCargo - smallCargoBusy);
-    public int LargeCargoAvailable() => Mathf.Max(0, largeCargo - largeCargoBusy);
+    public int ProbesAvailable()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null) return 0;
+        var state = gameStateHolder.state;
+
+        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
+        int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
+        return Mathf.Max(0, stationed); // "available" = stationed (busy are not stationed)
+    }
+
+    public int SmallCargoAvailable()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null) return 0;
+        var state = gameStateHolder.state;
+
+        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.SmallCargo);
+        int busy = GameStateQueries.GetBusyShips(state, ShipType.SmallCargo);
+        return Mathf.Max(0, stationed);
+    }
+
+    public int LargeCargoAvailable()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null) return 0;
+        var state = gameStateHolder.state;
+
+        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.LargeCargo);
+        int busy = GameStateQueries.GetBusyShips(state, ShipType.LargeCargo);
+        return Mathf.Max(0, stationed);
+    }
 
     void UpdateUI()
     {
@@ -221,8 +249,19 @@ void Start()
         probesText.text = $"Probes: {stationed}/{total} (busy {busy}) ({probeCountMult:0.##}x)";
         }
     }
-        if (smallCargoText) smallCargoText.text = $"Small Cargo: {SmallCargoAvailable()} (busy {smallCargoBusy})";
-        if (largeCargoText) largeCargoText.text = $"Large Cargo: {LargeCargoAvailable()} (busy {largeCargoBusy})";
+        if (gameStateHolder != null && gameStateHolder.state != null)
+    {
+        var state = gameStateHolder.state;
+
+        int scStationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.SmallCargo);
+        int scBusy      = GameStateQueries.GetBusyShips(state, ShipType.SmallCargo);
+
+        int lcStationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.LargeCargo);
+        int lcBusy      = GameStateQueries.GetBusyShips(state, ShipType.LargeCargo);
+
+        if (smallCargoText) smallCargoText.text = $"Small Cargo: {scStationed} (busy {scBusy})";
+        if (largeCargoText) largeCargoText.text = $"Large Cargo: {lcStationed} (busy {lcBusy})";
+    }
 
         if (smallCargoCostText) smallCargoCostText.text = $"Cost: {smallCargoCostMetal} Metal";
         if (largeCargoCostText) largeCargoCostText.text = $"Cost: {largeCargoCostMetal} Metal";
@@ -399,7 +438,9 @@ public void TryBuildBasicFighter()
     }
 
     p.metal -= basicFighterCostMetal;
-    basicFighters += 1;
+
+    // ✅ Store fighters in PlanetState like every other ship
+    p.AddStationed(ShipType.BasicFighter, 1);
 
     if (actionStatusText)
     {
@@ -472,12 +513,19 @@ void RefreshBasicFighterRow()
     if (basicFighterCostText)
         basicFighterCostText.text = $"Cost: {basicFighterCostMetal} Metal";
 
-    if (basicFighterOwnedText)
-        basicFighterOwnedText.text = $"Owned: {basicFighters}";
+    if (gameStateHolder != null && gameStateHolder.state != null)
+    {
+        var state = gameStateHolder.state;
+        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.BasicFighter);
+        int busy = GameStateQueries.GetBusyShips(state, ShipType.BasicFighter);
+        int total = stationed + busy;
+
+        if (basicFighterOwnedText)
+            basicFighterOwnedText.text = $"{stationed}";
+    }
 
     if (buildBasicFighterButton)
-        buildBasicFighterButton.interactable =
-            MetalFloor() >= basicFighterCostMetal;
+        buildBasicFighterButton.interactable = MetalFloor() >= basicFighterCostMetal;
 }
 
 void RefreshCargoRows()
@@ -520,6 +568,23 @@ public void CloseBuild() => CloseAllMenus();
     return probeIncome + buildingIncome;
 }
 
+private int GetTotalShipsFromGameState(ShipType type)
+{
+    if (gameStateHolder == null || gameStateHolder.state == null) return 0;
+
+    var state = gameStateHolder.state;
+    int stationed = GameStateQueries.GetStationedShips(state, planetId, type);
+    int busy = GameStateQueries.GetBusyShips(state, type);
+    return stationed + busy;
+}
+
+// FORCE SHIP BUTTON
+#if UNITY_EDITOR
+public void Debug_ForceFoundShipsNextExpedition()
+{
+    ExpeditionResolver.Debug_ForceFoundShipsNext();
+}
+#endif
 
 double GetCrystalPerSecond()
 {
@@ -557,25 +622,33 @@ double GetGasPerSecond()
     return System.Math.Min(mult, maxProbeMultiplier);
 }
 
-// Debug Functions
-#if UNITY_EDITOR
-public void DebugAddResources()
-{
-    var p = GetPlanet();
-    if (p == null) return;
-
-    p.metal += debugAddAmount;
-    p.crystal += debugAddAmount;
-    p.gas += debugAddAmount;
-
-    if (actionStatusText)
+    // Cheat Button
+    #if UNITY_EDITOR
+    public void DebugAddResources()
     {
-        actionStatusText.color = Color.yellow;
-        actionStatusText.text = $"Added {debugAddAmount} of each resource (DEBUG)";
-    }
+        var p = GetPlanet();
+        if (p == null) return;
 
-    UpdateUI();
-}
-#endif
+        // +50k resources (or whatever debugAddAmount is)
+        p.metal += debugAddAmount;
+        p.crystal += debugAddAmount;
+        p.gas += debugAddAmount;
+
+        // +100 ships each
+        p.AddStationed(ShipType.Probe, 100);
+        p.AddStationed(ShipType.SmallCargo, 100);
+        p.AddStationed(ShipType.LargeCargo, 100);
+        p.AddStationed(ShipType.BasicFighter, 100);
+
+        if (actionStatusText)
+        {
+            actionStatusText.color = Color.yellow;
+            actionStatusText.text =
+                $"Added {debugAddAmount} of each resource and +100 Probe/SC/LC/BF (DEBUG)";
+        }
+
+        UpdateUI();
+    }
+    #endif
 
 }

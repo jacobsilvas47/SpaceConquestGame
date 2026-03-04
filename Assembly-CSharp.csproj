@@ -54,6 +54,7 @@
     <Compile Include="Assets/Scripts/Systems/ExpeditionResolver.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextSelector_A.cs" />
     <Compile Include="Assets/Scripts/Systems/FleetFactory.cs" />
+    <Compile Include="Assets/Scripts/UI/UIPageController.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark02.cs" />
     <Compile Include="Assets/Scripts/Managers/GameStateHolder.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ShipStats.cs" />

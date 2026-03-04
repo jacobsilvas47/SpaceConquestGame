@@ -22,10 +22,19 @@ public class ExpeditionPanelUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI timerText;
     [SerializeField] private TextMeshProUGUI resultText;
 
+    // Expedition Inputs
     [Header("Inputs")]
     [SerializeField] private TMP_InputField probesInput;
     [SerializeField] private TMP_InputField smallCargoInput;
     [SerializeField] private TMP_InputField largeCargoInput;
+    [SerializeField] private TMP_InputField basicFightersInput;
+
+    // Expedition Max Buttons
+    [Header("Max Buttons")]
+    [SerializeField] private Button maxProbesButton;
+    [SerializeField] private Button maxSmallCargoButton;
+    [SerializeField] private Button maxLargeCargoButton;
+    [SerializeField] private Button maxBasicFightersButton;
 
     private int ReadIntOrZero(TMP_InputField f)
     {
@@ -154,6 +163,7 @@ public class ExpeditionPanelUI : MonoBehaviour
         }
     }
 
+    // Send Expedition Method
     public void OnSendPressed()
     {
         if (gameStateHolder == null || gameStateHolder.state == null)
@@ -174,8 +184,9 @@ public class ExpeditionPanelUI : MonoBehaviour
         int probes = ReadIntOrZero(probesInput);
         int smallCargo = ReadIntOrZero(smallCargoInput);
         int largeCargo = ReadIntOrZero(largeCargoInput);
+        int basicFighters = ReadIntOrZero(basicFightersInput);
 
-        if (probes + smallCargo + largeCargo <= 0)
+        if (probes + smallCargo + largeCargo + basicFighters <= 0)
         {
             if (statusText) statusText.text = "Pick at least 1 ship.";
             return;
@@ -185,7 +196,8 @@ public class ExpeditionPanelUI : MonoBehaviour
         {
             probes = probes,
             smallCargo = smallCargo,
-            largeCargo = largeCargo
+            largeCargo = largeCargo,
+            basicFighters = basicFighters
         };
 
         double oneWaySeconds = 5;
@@ -207,6 +219,7 @@ public class ExpeditionPanelUI : MonoBehaviour
         if (probesInput) probesInput.text = "";
         if (smallCargoInput) smallCargoInput.text = "";
         if (largeCargoInput) largeCargoInput.text = "";
+        if (basicFightersInput) basicFightersInput.text = "";
 
         activeMissionId = missionId;
 
@@ -219,6 +232,44 @@ public class ExpeditionPanelUI : MonoBehaviour
 
         if (statusText) statusText.text = "Expedition sent!";
     }
+
+    private int GetStationedCount(ShipType type)
+{
+    if (gameStateHolder == null || gameStateHolder.state == null) return 0;
+
+    var p = gameStateHolder.state.GetPlanet(gameStateHolder.startingPlanetId);
+    if (p == null) return 0;
+
+    return Mathf.Max(0, p.GetStationed(type));
+}
+
+    // Start Max Button Methods
+
+    public void OnMaxProbesPressed()
+    {
+        int max = GetStationedCount(ShipType.Probe);
+        if (probesInput) probesInput.text = max.ToString();
+    }
+
+    public void OnMaxSmallCargoPressed()
+    {
+        int max = GetStationedCount(ShipType.SmallCargo);
+        if (smallCargoInput) smallCargoInput.text = max.ToString();
+    }
+
+    public void OnMaxLargeCargoPressed()
+    {
+        int max = GetStationedCount(ShipType.LargeCargo);
+        if (largeCargoInput) largeCargoInput.text = max.ToString();
+    }
+
+    public void OnMaxBasicFightersPressed()
+    {
+        int max = GetStationedCount(ShipType.BasicFighter);
+        if (basicFightersInput) basicFightersInput.text = max.ToString();
+    }
+
+    // End Max Button Methods
 
     private void Update()
     {

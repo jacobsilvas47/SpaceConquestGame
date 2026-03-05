@@ -269,6 +269,31 @@ public class ExpeditionPanelUI : MonoBehaviour
         if (basicFightersInput) basicFightersInput.text = max.ToString();
     }
 
+    public void FillMaxFleet()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null)
+            return;
+
+        var state = gameStateHolder.state;
+
+        int probesAvailable =
+            GameStateQueries.GetStationedShips(state, "home", ShipType.Probe);
+
+        int smallCargoAvailable =
+            GameStateQueries.GetStationedShips(state, "home", ShipType.SmallCargo);
+
+        int largeCargoAvailable =
+            GameStateQueries.GetStationedShips(state, "home", ShipType.LargeCargo);
+
+        int fightersAvailable =
+            GameStateQueries.GetStationedShips(state, "home", ShipType.BasicFighter);
+
+        probesInput.text = probesAvailable.ToString();
+        smallCargoInput.text = smallCargoAvailable.ToString();
+        largeCargoInput.text = largeCargoAvailable.ToString();
+        basicFightersInput.text = fightersAvailable.ToString();
+    }
+
     // End Max Button Methods
 
     private void Update()

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 
 public static class GameStateQueries
 {
@@ -33,5 +34,18 @@ public static class GameStateQueries
         }
 
         return busy;
+    }
+
+    public static int GetActiveExpeditions(GameState state, string originPlanetId = null)
+    {
+        if (state == null || state.missions == null) return 0;
+
+        return state.missions.Count(m =>
+            m != null &&
+            m is ExpeditionMission exp &&
+            m.status != MissionStatus.Completed &&
+            m.status != MissionStatus.Failed &&
+            (originPlanetId == null || exp.originPlanetId == originPlanetId)
+        );
     }
 }

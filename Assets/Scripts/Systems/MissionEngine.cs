@@ -39,6 +39,15 @@ public static class MissionEngine
         return null;
     }
 
+    int slots = Mathf.Max(1, state.expeditionSlotsUnlocked);
+    int active = GameStateQueries.GetActiveExpeditions(state, fleet.originPlanetId);
+
+    if (active >= slots)
+    {
+        Debug.Log($"Cannot send expedition: slots full ({active}/{slots}).");
+        return null;
+    }
+
     int seed = new System.Random().Next(1, int.MaxValue);
 
     var mission = new ExpeditionMission(fleet.originPlanetId, fleetId, seed);
@@ -89,15 +98,15 @@ public static class MissionEngine
         if (m.status == MissionStatus.Returning && now >= m.returnTime)
         {
             // Resolve expedition rewards once
-            if (m is ExpeditionMission exp && !exp.resolved)
-            {
-                ExpeditionResolver.Resolve(state, exp);
-                exp.resolved = true;
+        if (m is ExpeditionMission exp && !exp.resolved)
+        {
+            ExpeditionResolver.Resolve(state, exp);
 
-                // Feed UI result text
-                if (string.IsNullOrEmpty(exp.resultText))
-                    exp.resultText = exp.outcomeSummary;
-            }
+            if (string.IsNullOrEmpty(exp.resultText))
+                exp.resultText = exp.outcomeSummary;
+
+            AddExpeditionLog(state, exp);
+        }
 
             // Return fleet ships to origin planet
             FleetReturner.ReturnFleetToOrigin(state, m.fleetId);
@@ -106,5 +115,37 @@ public static class MissionEngine
             m.status = MissionStatus.Completed;
             }
         }
+    }
+
+       private static void AddExpeditionLog(GameState state, ExpeditionMission exp)
+    {
+        if (state.expeditionLog == null)
+            state.expeditionLog = new List<ExpeditionLogEntry>();
+
+        string summary = exp.resultText;
+        if (string.IsNullOrEmpty(summary))
+            summary = exp.outcomeSummary;
+        if (string.IsNullOrEmpty(summary))
+            summary = "Expedition complete.";
+
+        var entry = new ExpeditionLogEntry
+        {
+            timestamp = state.gameTime,
+            originPlanetId = exp.originPlanetId,
+            missionId = exp.missionId,
+
+            // Keep these for later stats/UI, but don't rely on them for text
+            metalGained = exp.rewardMetal,
+            crystalGained = exp.rewardCrystal,
+            gasGained = exp.rewardGas,
+
+            // ✅ This is what the console should display
+            summaryText = summary
+        };
+
+        if (exp.rewardItems != null && exp.rewardItems.Count > 0)
+            entry.itemsGained.AddRange(exp.rewardItems);
+
+        state.expeditionLog.Add(entry);
     }
 }

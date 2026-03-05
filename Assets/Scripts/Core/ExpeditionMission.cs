@@ -1,15 +1,20 @@
-using UnityEngine;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 [Serializable]
 public class ExpeditionMission : Mission
 {
+    public int rewardMetal;
+    public int rewardCrystal;
+    public int rewardGas;
     public int seed;                 // used later so outcomes are reproducible if needed
     public bool resolved;            // did we roll the outcome yet
     public string outcomeSummary;    // debug string for now
     public int cargoCapacity;
     public string resultText = "";
     public bool resultShown = false;
+    public List<ItemStack> rewardItems = new List<ItemStack>();
 
 
     public ExpeditionMission(string originPlanetId, string fleetId, int seed)

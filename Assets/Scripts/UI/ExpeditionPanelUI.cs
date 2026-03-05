@@ -13,6 +13,8 @@ public class ExpeditionPanelUI : MonoBehaviour
     private double activeMissionReturnTime = 0;
     private float resultDisplayUntilRealtime = 0f;
 
+    [SerializeField] private string planetId = "home";
+
     [Header("Refs")]
     [SerializeField] private GameStateHolder gameStateHolder;
 
@@ -203,7 +205,7 @@ public class ExpeditionPanelUI : MonoBehaviour
         double oneWaySeconds = 5;
 
         // 🔎 DEBUG HERE
-        var p = gameStateHolder.state.GetPlanet(gameStateHolder.startingPlanetId);
+        var p = gameStateHolder.state.GetPlanet(planetId);
         Debug.Log($"Stationed BEFORE send: P={p.GetStationed(ShipType.Probe)} SC={p.GetStationed(ShipType.SmallCargo)} LC={p.GetStationed(ShipType.LargeCargo)}");
         Debug.Log($"Requested: P={probes} SC={smallCargo} LC={largeCargo}");
 
@@ -237,7 +239,7 @@ public class ExpeditionPanelUI : MonoBehaviour
 {
     if (gameStateHolder == null || gameStateHolder.state == null) return 0;
 
-    var p = gameStateHolder.state.GetPlanet(gameStateHolder.startingPlanetId);
+    var p = gameStateHolder.state.GetPlanet(planetId);
     if (p == null) return 0;
 
     return Mathf.Max(0, p.GetStationed(type));
@@ -277,16 +279,16 @@ public class ExpeditionPanelUI : MonoBehaviour
         var state = gameStateHolder.state;
 
         int probesAvailable =
-            GameStateQueries.GetStationedShips(state, "home", ShipType.Probe);
+            GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
 
         int smallCargoAvailable =
-            GameStateQueries.GetStationedShips(state, "home", ShipType.SmallCargo);
+            GameStateQueries.GetStationedShips(state, planetId, ShipType.SmallCargo);
 
         int largeCargoAvailable =
-            GameStateQueries.GetStationedShips(state, "home", ShipType.LargeCargo);
+            GameStateQueries.GetStationedShips(state, planetId, ShipType.LargeCargo);
 
         int fightersAvailable =
-            GameStateQueries.GetStationedShips(state, "home", ShipType.BasicFighter);
+            GameStateQueries.GetStationedShips(state, planetId, ShipType.BasicFighter);
 
         probesInput.text = probesAvailable.ToString();
         smallCargoInput.text = smallCargoAvailable.ToString();
@@ -300,6 +302,10 @@ public class ExpeditionPanelUI : MonoBehaviour
     {
         if (gameStateHolder == null || gameStateHolder.state == null) return;
         if (statusText == null) return;
+
+    // ✅ Always keep slots + send button state correct
+        UpdateSlotsUI();
+
         if (string.IsNullOrEmpty(activeMissionId)) return;
 
         double now = gameStateHolder.state.gameTime;
@@ -355,17 +361,30 @@ public class ExpeditionPanelUI : MonoBehaviour
             return;
         }
 
-        // Completed but no result text available
+        // Completed but result not shown yet, give it a moment (prevents missing result due to timing)
         if (now >= activeMissionReturnTime)
         {
             statusText.text = "Expedition complete!";
 
-            if (resultText) resultText.text = "";
+            // If we have the mission object, prefer its text if/when it exists
+            if (active != null && !string.IsNullOrEmpty(active.resultText))
+            {
+                if (!active.resultShown)
+                {
+                    active.resultShown = true;
+                    if (resultText) resultText.text = active.resultText;
 
-            activeMissionId = null;
-            activeMissionArriveTime = 0;
-            activeMissionReturnTime = 0;
-            return;
+                    resultDisplayUntilRealtime = Time.realtimeSinceStartup + 3f;
+                    return;
+                }
+            }
+            else
+            {
+                // fallback if something went wrong
+                if (resultText) resultText.text = "Expedition complete, awaiting report...";
+                resultDisplayUntilRealtime = Time.realtimeSinceStartup + 1.5f;
+                return;
+            }
         }
 
         // Phase messaging
@@ -378,5 +397,25 @@ public class ExpeditionPanelUI : MonoBehaviour
 
         double toReturn = activeMissionReturnTime - now;
         statusText.text = $"Expedition returning, {toReturn:0.0}s to return";
+    }
+
+        private void UpdateSlotsUI()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null) return;
+
+        var state = gameStateHolder.state;
+
+        int slots = System.Math.Max(1, state.expeditionSlotsUnlocked);
+        int active = GameStateQueries.GetActiveExpeditions(state, planetId);
+
+        // Example: show slots in status text when no mission is selected
+        if (string.IsNullOrEmpty(activeMissionId))
+        {
+            statusText.text = $"Expedition Slots: {active}/{slots}";
+        }
+
+        // Disable send button if full
+        if (sendButton)
+            sendButton.interactable = active < slots;
     }
 }

@@ -5,6 +5,10 @@ using System.Collections.Generic;
 [Serializable]
 public class GameState
 {
+    [Header("Expeditions")]
+    public int expeditionSlotsUnlocked = 1;
+    public List<ExpeditionLogEntry> expeditionLog = new List<ExpeditionLogEntry>();
+
     public double gameTime; // your “clock”, you can increment from a MonoBehaviour
 
     public Dictionary<string, PlanetState> planets = new Dictionary<string, PlanetState>();

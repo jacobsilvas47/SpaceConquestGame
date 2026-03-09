@@ -68,6 +68,12 @@ public class ResourceManager : MonoBehaviour
     public int probeCostCrystal = 100;
     public int probeCostGas = 100;
 
+    [Header("Level")] // Build Costs
+    [SerializeField] private TextMeshProUGUI refineryLevelText;
+    [SerializeField] private TextMeshProUGUI crystalLevelText;
+    [SerializeField] private TextMeshProUGUI gasLevelText;
+    [SerializeField] private TextMeshProUGUI probeLevelText;
+
     [Header("Base Producers")]
     public int probes = 5;
 
@@ -102,12 +108,14 @@ public class ResourceManager : MonoBehaviour
 
     [Header("Build UI")]
     public Button buildRefineryButton;
-    public TextMeshProUGUI refineryCostText;
-    public TextMeshProUGUI actionStatusText;
     public Button buildCrystalMineButton;
     public Button buildGasExtractorButton;
+    public Button buildProbeButton;
+    public TextMeshProUGUI refineryCostText;
+    public TextMeshProUGUI actionStatusText;
     public TextMeshProUGUI crystalMineCostText;
     public TextMeshProUGUI gasExtractorCostText;
+    public TextMeshProUGUI probeCostText;
 
     [Header("Income UI Text (optional)")]
     public TextMeshProUGUI metalRateText;
@@ -276,10 +284,35 @@ void Start()
         if (crystalRateText) crystalRateText.text = $"Crystal/s: {crystalPerSec:0.##}";
         if (gasRateText) gasRateText.text = $"Gas/s: {gasPerSec:0.##}";
 
-        if (refineryCostText) refineryCostText.text = $"Cost: {refineryCostMetal} Metal";
+        if (refineryCostText)
+            refineryCostText.text = $"Cost: {refineryCostMetal} Metal";
+
+        if (crystalMineCostText)
+            crystalMineCostText.text = $"Cost: {crystalMineCostMetal} Metal";
+
+        if (gasExtractorCostText)
+            gasExtractorCostText.text = $"Cost: {gasExtractorCostMetal} Metal";
+
+        if (probeCostText)
+            probeCostText.text = $"Cost: {probeCostMetal}M/{probeCostCrystal}C/{probeCostGas}G";
+
+        if (refineryLevelText)
+            refineryLevelText.text = $"Level {metalRefineries}";
+
+        if (crystalLevelText)
+            crystalLevelText.text = $"Level {crystalMines}";
+
+        if (gasLevelText)
+            gasLevelText.text = $"Level {gasExtractors}";
+
+        if (probeLevelText)
+        {
+            int totalProbes = GetTotalProbesFromGameState();
+            probeLevelText.text = $"Level {totalProbes}";
+        }
 
         if (buildRefineryButton)
-            buildRefineryButton.interactable   = MetalFloor() >= refineryCostMetal;
+            buildRefineryButton.interactable = MetalFloor() >= refineryCostMetal;
 
         if (buildCrystalMineButton)
             buildCrystalMineButton.interactable = MetalFloor() >= crystalMineCostMetal;
@@ -287,11 +320,13 @@ void Start()
         if (buildGasExtractorButton)
             buildGasExtractorButton.interactable = MetalFloor() >= gasExtractorCostMetal;
 
-        if (crystalMineCostText)
-            crystalMineCostText.text = $"Cost: {crystalMineCostMetal} Metal";
-
-        if (gasExtractorCostText)
-            gasExtractorCostText.text = $"Cost: {gasExtractorCostMetal} Metal";
+        if (buildProbeButton)
+        {
+            buildProbeButton.interactable =
+                MetalFloor() >= probeCostMetal &&
+                CrystalFloor() >= probeCostCrystal &&
+                GasFloor() >= probeCostGas;
+        }
 
         RefreshBasicFighterRow();
         RefreshCargoRows();

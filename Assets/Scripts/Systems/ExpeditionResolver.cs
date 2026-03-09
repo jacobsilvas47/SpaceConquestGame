@@ -118,6 +118,10 @@ public static class ExpeditionResolver
         int gasGain = 0;
 
         mission.outcomeSummary = "";
+        mission.itemsFound.Clear();
+
+        ItemId foundItem = ItemId.None;
+        int foundItemAmount = 0;
 
         if (roll < tSingle)
         {
@@ -227,7 +231,6 @@ public static class ExpeditionResolver
                 parts += (parts.Length > 0 ? ", " : "") + $"+{basicFightersFound} Basic Fighters";
 
             mission.outcomeSummary = $"Result: {parts}";
-            mission.resultText = mission.outcomeSummary;
 
             // Ensure resource gains remain 0 for ship-find outcome
             metalGain = 0;
@@ -240,15 +243,54 @@ public static class ExpeditionResolver
         mission.rewardCrystal = crystalGain;
         mission.rewardGas = gasGain;
 
-        // ---- Apply to planet ONCE ----
+        // ---- Apply resources to planet ONCE ----
         planet.metal += metalGain;
         planet.crystal += crystalGain;
         planet.gas += gasGain;
 
+        // ---- Optional item reward roll ----
+        if (ExpeditionItemLoot.TryRollItemReward(rng, out foundItem, out foundItemAmount))
+        {
+            state.inventory.Add(foundItem, foundItemAmount);
+
+            mission.itemsFound.Clear();
+            mission.itemsFound.Add(new ExpeditionItemReward(foundItem, foundItemAmount));
+
+            string itemText = $"Found item: {ItemDatabase.GetName(foundItem)} x{foundItemAmount}";
+
+            if (!string.IsNullOrEmpty(mission.outcomeSummary))
+                mission.outcomeSummary += $"\n{itemText}";
+            else
+                mission.outcomeSummary = itemText;
+
+            Debug.Log($"[EXPEDITION] {itemText}");
+        }
+
         // ---- Set final UI/log text ONCE ----
         mission.resultText = mission.outcomeSummary;
+
+        // --- Add entry to expedition log ---
+        var entry = new ExpeditionLogEntry();
+        entry.timestamp = state.gameTime;
+        entry.originPlanetId = mission.originPlanetId;
+        entry.missionId = mission.missionId;
+
+        entry.metalGained = metalGain;
+        entry.crystalGained = crystalGain;
+        entry.gasGained = gasGain;
+
+        if (foundItem != ItemId.None && foundItemAmount > 0)
+        {
+            entry.itemsGained.Add(new ExpeditionItemReward(foundItem, foundItemAmount));
+        }
+
+        entry.summaryText = mission.outcomeSummary;
+
+        state.expeditionLog.Add(entry);
+
         mission.resolved = true;
 
-        Debug.Log($"[EXPEDITION] {mission.resultText} | Totals: M={planet.metal:F0} C={planet.crystal:F0} G={planet.gas:F0}");
+        string logLine = $"{mission.resultText} | Totals: M={planet.metal:F0} C={planet.crystal:F0} G={planet.gas:F0}";
+        Debug.Log($"[EXPEDITION] {logLine}");
     }
 }

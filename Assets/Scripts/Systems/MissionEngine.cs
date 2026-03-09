@@ -143,9 +143,7 @@ public static class MissionEngine
             summaryText = summary
         };
 
-        if (exp.rewardItems != null && exp.rewardItems.Count > 0)
-            entry.itemsGained.AddRange(exp.rewardItems);
-
-        state.expeditionLog.Add(entry);
+        if (exp.itemsFound != null && exp.itemsFound.Count > 0)
+            entry.itemsGained.AddRange(exp.itemsFound);
     }
 }

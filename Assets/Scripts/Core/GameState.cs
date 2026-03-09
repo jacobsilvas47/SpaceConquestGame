@@ -17,6 +17,7 @@ public class GameState
     // keep missions as a list so order is stable
     public List<Mission> missions = new List<Mission>();
 
+    // Inventory
     public InventoryState inventory = new InventoryState();
 
     public PlanetState GetPlanet(string planetId)

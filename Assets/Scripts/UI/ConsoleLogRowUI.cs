@@ -36,7 +36,7 @@ public class ConsoleLogRowUI : MonoBehaviour
             for (int i = 0; i < e.itemsGained.Count; i++)
             {
                 var it = e.itemsGained[i];
-                sb.Append($"+{it.count} {it.itemId}");
+                sb.Append($"+{it.amount} {ItemDatabase.GetName(it.itemId)}");
                 if (i < e.itemsGained.Count - 1) sb.Append(", ");
             }
 

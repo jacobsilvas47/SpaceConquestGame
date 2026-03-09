@@ -14,7 +14,7 @@ public class ExpeditionMission : Mission
     public int cargoCapacity;
     public string resultText = "";
     public bool resultShown = false;
-    public List<ItemStack> rewardItems = new List<ItemStack>();
+    public List<ExpeditionItemReward> itemsFound = new List<ExpeditionItemReward>();
 
 
     public ExpeditionMission(string originPlanetId, string fleetId, int seed)

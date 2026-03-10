@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 public static class ExpeditionItemLoot
 {
@@ -63,5 +64,35 @@ public static class ExpeditionItemLoot
         }
 
         return true;
+    }
+
+        public static ItemRarity RollRarity(System.Random rng, float quality01)
+    {
+        quality01 = Mathf.Clamp01(quality01);
+
+        int commonWeight = Mathf.RoundToInt(Mathf.Lerp(550, 350, quality01));
+        int uncommonWeight = Mathf.RoundToInt(Mathf.Lerp(250, 280, quality01));
+        int rareWeight = Mathf.RoundToInt(Mathf.Lerp(120, 200, quality01));
+        int epicWeight = Mathf.RoundToInt(Mathf.Lerp(50, 110, quality01));
+        int legendaryWeight = Mathf.RoundToInt(Mathf.Lerp(25, 50, quality01));
+        int alienWeight = Mathf.RoundToInt(Mathf.Lerp(5, 10, quality01));
+
+        int totalWeight = commonWeight + uncommonWeight + rareWeight + epicWeight + legendaryWeight + alienWeight;
+        int roll = rng.Next(0, totalWeight);
+
+        if (roll < commonWeight) return ItemRarity.Common;
+        roll -= commonWeight;
+
+        if (roll < uncommonWeight) return ItemRarity.Uncommon;
+        roll -= uncommonWeight;
+
+        if (roll < rareWeight) return ItemRarity.Rare;
+        roll -= rareWeight;
+
+        if (roll < epicWeight) return ItemRarity.Epic;
+        roll -= epicWeight;
+
+        if (roll < legendaryWeight) return ItemRarity.Legendary;
+        return ItemRarity.Alien;
     }
 }

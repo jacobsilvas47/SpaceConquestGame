@@ -248,23 +248,25 @@ public static class ExpeditionResolver
         planet.crystal += crystalGain;
         planet.gas += gasGain;
 
-        // ---- Optional item reward roll ----
+       // ---- Optional item reward roll ----
         if (ExpeditionItemLoot.TryRollItemReward(rng, out foundItem, out foundItemAmount))
-        {
-            state.inventory.Add(foundItem, foundItemAmount);
+    {
+        ItemRarity foundRarity = ExpeditionItemLoot.RollRarity(rng, bonus01);
 
-            mission.itemsFound.Clear();
-            mission.itemsFound.Add(new ExpeditionItemReward(foundItem, foundItemAmount));
+        state.inventory.Add(foundItem, foundRarity, foundItemAmount);
 
-            string itemText = $"Found item: {ItemDatabase.GetName(foundItem)} x{foundItemAmount}";
+        mission.itemsFound.Clear();
+        mission.itemsFound.Add(new ExpeditionItemReward(foundItem, foundItemAmount));
 
-            if (!string.IsNullOrEmpty(mission.outcomeSummary))
-                mission.outcomeSummary += $"\n{itemText}";
-            else
-                mission.outcomeSummary = itemText;
+        string itemText = $"Found item: {ItemDatabase.GetDisplayName(foundItem, foundRarity)} x{foundItemAmount}";
 
-            Debug.Log($"[EXPEDITION] {itemText}");
-        }
+        if (!string.IsNullOrEmpty(mission.outcomeSummary))
+            mission.outcomeSummary += $"\n{itemText}";
+        else
+            mission.outcomeSummary = itemText;
+
+        Debug.Log($"[EXPEDITION] {itemText}");
+    }
 
         // ---- Set final UI/log text ONCE ----
         mission.resultText = mission.outcomeSummary;

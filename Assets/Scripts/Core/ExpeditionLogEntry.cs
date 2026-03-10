@@ -22,6 +22,7 @@
     {
         public ItemId itemId;
         public int amount;
+        public ItemRarity rarity;
 
         public ExpeditionItemReward() { }
 

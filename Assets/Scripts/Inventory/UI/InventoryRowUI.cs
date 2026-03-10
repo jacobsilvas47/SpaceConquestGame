@@ -11,8 +11,12 @@ public class InventoryRowUI : MonoBehaviour
     {
         if (stack == null) return;
 
-        if (nameText) nameText.text = ItemDatabase.GetName(stack.id);
+        if (nameText)
+    {
+        nameText.text = ItemDatabase.GetDisplayName(stack.id, stack.rarity);
+        nameText.color = ItemRarityUtility.GetColor(stack.rarity);
+    }
         if (qtyText) qtyText.text = $"x{stack.qty}";
-        if (categoryText) categoryText.text = ItemDatabase.GetCategory(stack.id);
+        if (categoryText) categoryText.text = ItemDatabase.GetCategory(stack.id).ToString();
     }
 }

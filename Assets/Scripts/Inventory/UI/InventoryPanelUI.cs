@@ -1,25 +1,14 @@
 using UnityEngine;
-using TMPro;
 
 public class InventoryPanelUI : MonoBehaviour
 {
-    [Header("Refs")]
     [SerializeField] private GameStateHolder gameStateHolder;
+    [SerializeField] private Transform contentRoot;
+    [SerializeField] private GameObject rowPrefab;
 
-    [Header("UI")]
-    [SerializeField] private GameObject panelRoot;   // InventoryPanel
-    [SerializeField] private Transform contentRoot;  // ScrollView/Viewport/Content
-    [SerializeField] private GameObject rowPrefab;   // InventoryRowPrefab
-
-    public void Open()
+    private void OnEnable()
     {
-        if (panelRoot) panelRoot.SetActive(true);
         Refresh();
-    }
-
-    public void Close()
-    {
-        if (panelRoot) panelRoot.SetActive(false);
     }
 
     public void Refresh()
@@ -27,19 +16,29 @@ public class InventoryPanelUI : MonoBehaviour
         if (gameStateHolder == null || gameStateHolder.state == null) return;
         if (contentRoot == null || rowPrefab == null) return;
 
-        // Clear old
-        for (int i = contentRoot.childCount - 1; i >= 0; i--)
-            Destroy(contentRoot.GetChild(i).gameObject);
+        ClearRows();
 
-        var inv = gameStateHolder.state.inventory;
+        var inventory = gameStateHolder.state.inventory;
+        if (inventory == null || inventory.stacks == null) return;
 
-        // Empty message (optional): show nothing if empty
-        for (int i = 0; i < inv.stacks.Count; i++)
+        foreach (var stack in inventory.stacks)
         {
-            var s = inv.stacks[i];
-            var go = Instantiate(rowPrefab, contentRoot);
-            var row = go.GetComponent<InventoryRowUI>();
-            if (row != null) row.Bind(s.id.ToString(), s.qty);
+            if (stack == null) continue;
+            if (stack.qty <= 0) continue;
+
+            GameObject rowObj = Instantiate(rowPrefab, contentRoot);
+            var rowUI = rowObj.GetComponent<InventoryRowUI>();
+
+            if (rowUI != null)
+                rowUI.Bind(stack);
+        }
+    }
+
+    private void ClearRows()
+    {
+        for (int i = contentRoot.childCount - 1; i >= 0; i--)
+        {
+            Destroy(contentRoot.GetChild(i).gameObject);
         }
     }
 }

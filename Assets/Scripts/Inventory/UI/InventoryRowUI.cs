@@ -1,14 +1,18 @@
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 public class InventoryRowUI : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI itemNameText;
+    [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI qtyText;
+    [SerializeField] private TextMeshProUGUI categoryText;
 
-    public void Bind(string itemName, int qty)
+    public void Bind(InventoryStack stack)
     {
-        if (itemNameText) itemNameText.text = itemName;
-        if (qtyText) qtyText.text = qty.ToString();
+        if (stack == null) return;
+
+        if (nameText) nameText.text = ItemDatabase.GetName(stack.id);
+        if (qtyText) qtyText.text = $"x{stack.qty}";
+        if (categoryText) categoryText.text = ItemDatabase.GetCategory(stack.id);
     }
 }

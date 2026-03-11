@@ -11,9 +11,18 @@ public class PlanetState
     public double metal;
     public double crystal;
     public double gas;
+    
+
+    // Building levels
+    public int metalRefineryLevel = 0;
+    public int crystalMineLevel = 0;
+    public int gasExtractorLevel = 0;
 
     // ships stationed on the planet (not traveling)
     public Dictionary<ShipType, int> stationedShips = new Dictionary<ShipType, int>();
+
+    // Active building upgrade
+    public BuildingUpgradeJob activeBuildingUpgrade;
 
     public PlanetState(string planetId)
     {

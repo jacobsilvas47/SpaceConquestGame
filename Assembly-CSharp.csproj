@@ -62,6 +62,7 @@
     <Compile Include="Assets/Scripts/UI/ConsolePageUI.cs" />
     <Compile Include="Assets/Scripts/Inventory/UI/InventoryPanelUI.cs" />
     <Compile Include="Assets/Scripts/Items/ItemRarityUtility.cs" />
+    <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeSystem.cs" />
     <Compile Include="Assets/Scripts/Managers/GameStateHolder.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ShipStats.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_ExampleScript_01.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="Assets/Scripts/Systems/MissionEngine.cs" />
     <Compile Include="Assets/Scripts/Systems/FleetReturner.cs" />
     <Compile Include="Assets/Scripts/UI/ConsoleLogRowUI.cs" />
+    <Compile Include="Assets/Scripts/Utilities/TimeFormatUtility.cs" />
     <Compile Include="Assets/Scripts/Core/MissionType.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark01_UGUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/SimpleScript.cs" />
@@ -101,6 +103,7 @@
     <Compile Include="Assets/Scripts/Items/ItemDefinition.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark01.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextMeshSpawner.cs" />
+    <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeJob.cs" />
     <Compile Include="Assets/Scripts/Expeditions/FleetComposition.cs" />
     <Compile Include="Assets/Scripts/GamePlay/ResourceManager.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/CameraController.cs" />
@@ -119,6 +122,8 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextEventCheck.cs" />
     <Compile Include="Assets/Scripts/Core/PlanetState.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionRules.cs" />
+    <Compile Include="Assets/Scripts/Buildings/BuildingBalance.cs" />
+    <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeFormula.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextMeshProFloatingText.cs" />
     <Compile Include="Assets/Scripts/Core/ExpeditionMission.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryStack.cs" />

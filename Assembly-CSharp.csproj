@@ -69,6 +69,7 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMPro_InstructionOverlay.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/VertexShakeB.cs" />
     <Compile Include="Assets/Scripts/Items/ItemEnums.cs" />
+    <Compile Include="Assets/Scripts/Fleet/ShipQueueRowUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/VertexJitter.cs" />
     <Compile Include="Assets/Scripts/Core/GameState.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_UiFrameRateCounter.cs" />
@@ -127,6 +128,7 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextMeshProFloatingText.cs" />
     <Compile Include="Assets/Scripts/Core/ExpeditionMission.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryStack.cs" />
+    <Compile Include="Assets/Scripts/Fleet/ShipQueuePanelUI.cs" />
     <Compile Include="Assets/Scripts/Core/Fleet.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -3,29 +3,29 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
-public class ResourceManager : MonoBehaviour
-{
-    public GameStateHolder gameStateHolder;
-    public string planetId = "home";
-
-    private PlanetState GetPlanet()
+    public class ResourceManager : MonoBehaviour
     {
-        if (gameStateHolder == null || gameStateHolder.state == null) return null;
-        return gameStateHolder.state.GetPlanet(planetId);
+        public GameStateHolder gameStateHolder;
+        public string planetId = "home";
+
+        private PlanetState GetPlanet()
+        {
+            if (gameStateHolder == null || gameStateHolder.state == null) return null;
+            return gameStateHolder.state.GetPlanet(planetId);
+        }
+
+        private int GetTotalProbesFromGameState()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null)
+            return probes; // fallback safety
+
+        var state = gameStateHolder.state;
+
+        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
+        int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
+
+        return stationed + busy;
     }
-
-    private int GetTotalProbesFromGameState()
-{
-    if (gameStateHolder == null || gameStateHolder.state == null)
-        return probes; // fallback safety
-
-    var state = gameStateHolder.state;
-
-    int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
-    int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
-
-    return stationed + busy;
-}
 
     private double MetalFloor()   => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().metal);
     private double CrystalFloor() => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().crystal);
@@ -107,11 +107,16 @@ public class ResourceManager : MonoBehaviour
     public Button buildCrystalMineButton;
     public Button buildGasExtractorButton;
     public Button buildProbeButton;
+
     public TextMeshProUGUI refineryCostText;
-    public TextMeshProUGUI actionStatusText;
     public TextMeshProUGUI crystalMineCostText;
     public TextMeshProUGUI gasExtractorCostText;
     public TextMeshProUGUI probeCostText;
+
+    [Header("Status UI")]
+    public TextMeshProUGUI actionStatusText;   // success / error messages
+    public TextMeshProUGUI upgradeStatusText;  // building timer
+    public TextMeshProUGUI shipQueueText;      // fleet queue timer
 
     [Header("Income UI Text (optional)")]
     public TextMeshProUGUI metalRateText;
@@ -143,46 +148,47 @@ public class ResourceManager : MonoBehaviour
     public Button buildMenuButton;
     public Button closeBuildButton; 
 
-void Start()
-{
-    // Start with clean screen
-    if (gameStateHolder == null)
-{
-    gameStateHolder = FindFirstObjectByType<GameStateHolder>();
-}
-
-    UpdateUI();
-    RefreshBasicFighterRow();
-    RefreshCargoRows();
-}
-
-    void Update()
-{
-    double metalPerSec = GetMetalPerSecond();
-    double crystalPerSec = GetCrystalPerSecond();
-    double gasPerSec = GetGasPerSecond();
-
-    var p = (gameStateHolder != null && gameStateHolder.state != null)
-        ? gameStateHolder.state.GetPlanet(planetId)
-        : null;
-
-    if (p != null)
+    void Start()
     {
-        // Tick timed systems first
-        BuildingUpgradeSystem.TickPlanet(p);
-
-        p.metal += metalPerSec * Time.deltaTime;
-        p.crystal += crystalPerSec * Time.deltaTime;
-        p.gas += gasPerSec * Time.deltaTime;
-
-        // Mirror into inspector (debug)
-        metal = p.metal;
-        crystal = p.crystal;
-        gas = p.gas;
+        // Start with clean screen
+        if (gameStateHolder == null)
+    {
+        gameStateHolder = FindFirstObjectByType<GameStateHolder>();
     }
 
-    UpdateUI();
-}
+        UpdateUI();
+        RefreshBasicFighterRow();
+        RefreshCargoRows();
+    }
+
+        void Update()
+    {
+        double metalPerSec = GetMetalPerSecond();
+        double crystalPerSec = GetCrystalPerSecond();
+        double gasPerSec = GetGasPerSecond();
+
+        var p = (gameStateHolder != null && gameStateHolder.state != null)
+            ? gameStateHolder.state.GetPlanet(planetId)
+            : null;
+
+        if (p != null)
+        {
+            // Tick timed systems first
+            BuildingUpgradeSystem.TickPlanet(p);
+            TickShipQueue(p);
+
+            p.metal += metalPerSec * Time.deltaTime;
+            p.crystal += crystalPerSec * Time.deltaTime;
+            p.gas += gasPerSec * Time.deltaTime;
+
+            // Mirror into inspector (debug)
+            metal = p.metal;
+            crystal = p.crystal;
+            gas = p.gas;
+        }
+
+        UpdateUI();
+    }
 
     public int ProbesAvailable()
     {
@@ -214,183 +220,196 @@ void Start()
         return Mathf.Max(0, stationed);
     }
 
-    void UpdateUI()
-{
-    double metalPerSec = GetMetalPerSecond();
-    double crystalPerSec = GetCrystalPerSecond();
-    double gasPerSec = GetGasPerSecond();
-    double probeCountMult = GetProbeCountMultiplier();
-
-    var p = GetPlanet();
-    var state = (gameStateHolder != null) ? gameStateHolder.state : null;
-
-    if (p != null)
+        void UpdateUI()
     {
-        if (metalText) metalText.text = $"Metal: {NumberFormatter.Format(System.Math.Floor(p.metal))}";
-        if (crystalText) crystalText.text = $"Crystal: {NumberFormatter.Format(System.Math.Floor(p.crystal))}";
-        if (gasText) gasText.text = $"Gas: {NumberFormatter.Format(System.Math.Floor(p.gas))}";
-    }
+        double metalPerSec = GetMetalPerSecond();
+        double crystalPerSec = GetCrystalPerSecond();
+        double gasPerSec = GetGasPerSecond();
+        double probeCountMult = GetProbeCountMultiplier();
 
-    if (probesText && state != null)
+        var p = GetPlanet();
+        var state = (gameStateHolder != null) ? gameStateHolder.state : null;
+
+        if (p != null)
+        {
+            if (metalText) metalText.text = $"Metal: {NumberFormatter.Format(System.Math.Floor(p.metal))}";
+            if (crystalText) crystalText.text = $"Crystal: {NumberFormatter.Format(System.Math.Floor(p.crystal))}";
+            if (gasText) gasText.text = $"Gas: {NumberFormatter.Format(System.Math.Floor(p.gas))}";
+        }
+
+        if (probesText && state != null)
+        {
+            int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
+            int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
+            int total = stationed + busy;
+
+            probesText.text = $"Probes: {stationed}/{total} (busy {busy}) ({probeCountMult:0.##}x)";
+        }
+
+        if (state != null)
+        {
+            int scStationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.SmallCargo);
+            int scBusy = GameStateQueries.GetBusyShips(state, ShipType.SmallCargo);
+
+            int lcStationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.LargeCargo);
+            int lcBusy = GameStateQueries.GetBusyShips(state, ShipType.LargeCargo);
+
+            if (smallCargoText) smallCargoText.text = $"Small Cargo: {scStationed} (busy {scBusy})";
+            if (largeCargoText) largeCargoText.text = $"Large Cargo: {lcStationed} (busy {lcBusy})";
+        }
+
+        if (smallCargoCostText) smallCargoCostText.text = $"Cost: {smallCargoCostMetal} Metal";
+        if (largeCargoCostText) largeCargoCostText.text = $"Cost: {largeCargoCostMetal} Metal";
+
+        if (buildSmallCargoButton)
+            buildSmallCargoButton.interactable = MetalFloor() >= smallCargoCostMetal;
+
+        if (buildLargeCargoButton)
+            buildLargeCargoButton.interactable = MetalFloor() >= largeCargoCostMetal;
+
+        if (metalRateText) metalRateText.text = $"Metal/s: {metalPerSec:0.##}";
+        if (crystalRateText) crystalRateText.text = $"Crystal/s: {crystalPerSec:0.##}";
+        if (gasRateText) gasRateText.text = $"Gas/s: {gasPerSec:0.##}";
+
+        // ----------------------------
+        // Building scaled costs + times
+        // ----------------------------
+        int refineryLevel = (p != null) ? p.metalRefineryLevel : 0;
+        int crystalLevel = (p != null) ? p.crystalMineLevel : 0;
+        int gasLevel = (p != null) ? p.gasExtractorLevel : 0;
+
+        double refineryMetalCost = BuildingBalance.GetMetalCost(BuildingType.MetalRefinery, refineryLevel);
+        double refineryCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.MetalRefinery, refineryLevel);
+        double refineryGasCost = BuildingBalance.GetGasCost(BuildingType.MetalRefinery, refineryLevel);
+        double refineryBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.MetalRefinery, refineryLevel);
+
+        double crystalMineMetalCost = BuildingBalance.GetMetalCost(BuildingType.CrystalMine, crystalLevel);
+        double crystalMineCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.CrystalMine, crystalLevel);
+        double crystalMineGasCost = BuildingBalance.GetGasCost(BuildingType.CrystalMine, crystalLevel);
+        double crystalMineBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.CrystalMine, crystalLevel);
+
+        double gasExtractorMetalCost = BuildingBalance.GetMetalCost(BuildingType.GasExtractor, gasLevel);
+        double gasExtractorCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.GasExtractor, gasLevel);
+        double gasExtractorGasCost = BuildingBalance.GetGasCost(BuildingType.GasExtractor, gasLevel);
+        double gasExtractorBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.GasExtractor, gasLevel);
+
+        if (refineryCostText)
+        {
+            refineryCostText.text =
+                $"Cost: {NumberFormatter.Format(refineryMetalCost)}M / " +
+                $"{NumberFormatter.Format(refineryCrystalCost)}C / " +
+                $"{NumberFormatter.Format(refineryGasCost)}G\n" +
+                $"Time: {TimeFormatUtility.FormatDuration(refineryBuildTime)}";
+        }
+
+        if (crystalMineCostText)
+        {
+            crystalMineCostText.text =
+                $"Cost: {NumberFormatter.Format(crystalMineMetalCost)}M / " +
+                $"{NumberFormatter.Format(crystalMineCrystalCost)}C / " +
+                $"{NumberFormatter.Format(crystalMineGasCost)}G\n" +
+                $"Time: {TimeFormatUtility.FormatDuration(crystalMineBuildTime)}";
+        }
+
+        if (gasExtractorCostText)
+        {
+            gasExtractorCostText.text =
+                $"Cost: {NumberFormatter.Format(gasExtractorMetalCost)}M / " +
+                $"{NumberFormatter.Format(gasExtractorCrystalCost)}C / " +
+                $"{NumberFormatter.Format(gasExtractorGasCost)}G\n" +
+                $"Time: {TimeFormatUtility.FormatDuration(gasExtractorBuildTime)}";
+        }
+
+        if (probeCostText)
+            probeCostText.text = $"Cost: {probeCostMetal}M/{probeCostCrystal}C/{probeCostGas}G";
+
+        if (refineryLevelText)
+            refineryLevelText.text = $"Level {refineryLevel} → {refineryLevel + 1}";
+
+        if (crystalLevelText)
+            crystalLevelText.text = $"Level {crystalLevel} → {crystalLevel + 1}";
+
+        if (gasLevelText)
+            gasLevelText.text = $"Level {gasLevel} → {gasLevel + 1}";
+
+        if (probeLevelText)
+        {
+            int totalProbes = GetTotalProbesFromGameState();
+            probeLevelText.text = $"Level {totalProbes}";
+        }
+
+        // -----------------------------------
+        // Building button interactable states
+        // -----------------------------------
+        bool canAffordRefinery =
+            p != null &&
+            p.metal >= refineryMetalCost &&
+            p.crystal >= refineryCrystalCost &&
+            p.gas >= refineryGasCost;
+
+        bool canAffordCrystalMine =
+            p != null &&
+            p.metal >= crystalMineMetalCost &&
+            p.crystal >= crystalMineCrystalCost &&
+            p.gas >= crystalMineGasCost;
+
+        bool canAffordGasExtractor =
+            p != null &&
+            p.metal >= gasExtractorMetalCost &&
+            p.crystal >= gasExtractorCrystalCost &&
+            p.gas >= gasExtractorGasCost;
+
+        bool buildingBusy = p != null && p.activeBuildingUpgrade != null;
+
+        if (buildRefineryButton)
+            buildRefineryButton.interactable = canAffordRefinery && !buildingBusy;
+
+        if (buildCrystalMineButton)
+            buildCrystalMineButton.interactable = canAffordCrystalMine && !buildingBusy;
+
+        if (buildGasExtractorButton)
+            buildGasExtractorButton.interactable = canAffordGasExtractor && !buildingBusy;
+
+        if (buildProbeButton)
+        {
+            buildProbeButton.interactable =
+                MetalFloor() >= probeCostMetal &&
+                CrystalFloor() >= probeCostCrystal &&
+                GasFloor() >= probeCostGas;
+        }
+
+        // -----------------------
+        // Active upgrade status UI
+        // -----------------------
+        if (upgradeStatusText)
     {
-        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
-        int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
-        int total = stationed + busy;
+        bool showUpgradeText = false;
 
-        probesText.text = $"Probes: {stationed}/{total} (busy {busy}) ({probeCountMult:0.##}x)";
-    }
-
-    if (state != null)
-    {
-        int scStationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.SmallCargo);
-        int scBusy = GameStateQueries.GetBusyShips(state, ShipType.SmallCargo);
-
-        int lcStationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.LargeCargo);
-        int lcBusy = GameStateQueries.GetBusyShips(state, ShipType.LargeCargo);
-
-        if (smallCargoText) smallCargoText.text = $"Small Cargo: {scStationed} (busy {scBusy})";
-        if (largeCargoText) largeCargoText.text = $"Large Cargo: {lcStationed} (busy {lcBusy})";
-    }
-
-    if (smallCargoCostText) smallCargoCostText.text = $"Cost: {smallCargoCostMetal} Metal";
-    if (largeCargoCostText) largeCargoCostText.text = $"Cost: {largeCargoCostMetal} Metal";
-
-    if (buildSmallCargoButton)
-        buildSmallCargoButton.interactable = MetalFloor() >= smallCargoCostMetal;
-
-    if (buildLargeCargoButton)
-        buildLargeCargoButton.interactable = MetalFloor() >= largeCargoCostMetal;
-
-    if (metalRateText) metalRateText.text = $"Metal/s: {metalPerSec:0.##}";
-    if (crystalRateText) crystalRateText.text = $"Crystal/s: {crystalPerSec:0.##}";
-    if (gasRateText) gasRateText.text = $"Gas/s: {gasPerSec:0.##}";
-
-    // ----------------------------
-    // Building scaled costs + times
-    // ----------------------------
-    int refineryLevel = (p != null) ? p.metalRefineryLevel : 0;
-    int crystalLevel = (p != null) ? p.crystalMineLevel : 0;
-    int gasLevel = (p != null) ? p.gasExtractorLevel : 0;
-
-    double refineryMetalCost = BuildingBalance.GetMetalCost(BuildingType.MetalRefinery, refineryLevel);
-    double refineryCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.MetalRefinery, refineryLevel);
-    double refineryGasCost = BuildingBalance.GetGasCost(BuildingType.MetalRefinery, refineryLevel);
-    double refineryBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.MetalRefinery, refineryLevel);
-
-    double crystalMineMetalCost = BuildingBalance.GetMetalCost(BuildingType.CrystalMine, crystalLevel);
-    double crystalMineCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.CrystalMine, crystalLevel);
-    double crystalMineGasCost = BuildingBalance.GetGasCost(BuildingType.CrystalMine, crystalLevel);
-    double crystalMineBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.CrystalMine, crystalLevel);
-
-    double gasExtractorMetalCost = BuildingBalance.GetMetalCost(BuildingType.GasExtractor, gasLevel);
-    double gasExtractorCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.GasExtractor, gasLevel);
-    double gasExtractorGasCost = BuildingBalance.GetGasCost(BuildingType.GasExtractor, gasLevel);
-    double gasExtractorBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.GasExtractor, gasLevel);
-
-    if (refineryCostText)
-    {
-        refineryCostText.text =
-            $"Cost: {NumberFormatter.Format(refineryMetalCost)}M / " +
-            $"{NumberFormatter.Format(refineryCrystalCost)}C / " +
-            $"{NumberFormatter.Format(refineryGasCost)}G\n" +
-            $"Time: {TimeFormatUtility.FormatDuration(refineryBuildTime)}";
-    }
-
-    if (crystalMineCostText)
-    {
-        crystalMineCostText.text =
-            $"Cost: {NumberFormatter.Format(crystalMineMetalCost)}M / " +
-            $"{NumberFormatter.Format(crystalMineCrystalCost)}C / " +
-            $"{NumberFormatter.Format(crystalMineGasCost)}G\n" +
-            $"Time: {TimeFormatUtility.FormatDuration(crystalMineBuildTime)}";
-    }
-
-    if (gasExtractorCostText)
-    {
-        gasExtractorCostText.text =
-            $"Cost: {NumberFormatter.Format(gasExtractorMetalCost)}M / " +
-            $"{NumberFormatter.Format(gasExtractorCrystalCost)}C / " +
-            $"{NumberFormatter.Format(gasExtractorGasCost)}G\n" +
-            $"Time: {TimeFormatUtility.FormatDuration(gasExtractorBuildTime)}";
-    }
-
-    if (probeCostText)
-        probeCostText.text = $"Cost: {probeCostMetal}M/{probeCostCrystal}C/{probeCostGas}G";
-
-    if (refineryLevelText)
-        refineryLevelText.text = $"Level {refineryLevel} → {refineryLevel + 1}";
-
-    if (crystalLevelText)
-        crystalLevelText.text = $"Level {crystalLevel} → {crystalLevel + 1}";
-
-    if (gasLevelText)
-        gasLevelText.text = $"Level {gasLevel} → {gasLevel + 1}";
-
-    if (probeLevelText)
-    {
-        int totalProbes = GetTotalProbesFromGameState();
-        probeLevelText.text = $"Level {totalProbes}";
-    }
-
-    // -----------------------------------
-    // Building button interactable states
-    // -----------------------------------
-    bool canAffordRefinery =
-        p != null &&
-        p.metal >= refineryMetalCost &&
-        p.crystal >= refineryCrystalCost &&
-        p.gas >= refineryGasCost;
-
-    bool canAffordCrystalMine =
-        p != null &&
-        p.metal >= crystalMineMetalCost &&
-        p.crystal >= crystalMineCrystalCost &&
-        p.gas >= crystalMineGasCost;
-
-    bool canAffordGasExtractor =
-        p != null &&
-        p.metal >= gasExtractorMetalCost &&
-        p.crystal >= gasExtractorCrystalCost &&
-        p.gas >= gasExtractorGasCost;
-
-    bool buildingBusy = p != null && p.activeBuildingUpgrade != null;
-
-    if (buildRefineryButton)
-        buildRefineryButton.interactable = canAffordRefinery && !buildingBusy;
-
-    if (buildCrystalMineButton)
-        buildCrystalMineButton.interactable = canAffordCrystalMine && !buildingBusy;
-
-    if (buildGasExtractorButton)
-        buildGasExtractorButton.interactable = canAffordGasExtractor && !buildingBusy;
-
-    if (buildProbeButton)
-    {
-        buildProbeButton.interactable =
-            MetalFloor() >= probeCostMetal &&
-            CrystalFloor() >= probeCostCrystal &&
-            GasFloor() >= probeCostGas;
-    }
-
-    // -----------------------
-    // Active upgrade status UI
-    // -----------------------
-    if (actionStatusText)
-    {
         if (p != null && p.activeBuildingUpgrade != null)
         {
             double remaining = BuildingUpgradeSystem.GetRemainingTime(p);
 
-            actionStatusText.color = Color.yellow;
-            actionStatusText.text =
-                $"Upgrading {p.activeBuildingUpgrade.buildingType}\n" +
-                $"Remaining: {TimeFormatUtility.FormatDuration(remaining)}";
+            if (remaining > 0)
+            {
+                showUpgradeText = true;
+                upgradeStatusText.gameObject.SetActive(true);
+                upgradeStatusText.color = Color.yellow;
+                upgradeStatusText.text =
+                    $"Upgrading {GetBuildingDisplayName(p.activeBuildingUpgrade.buildingType)}\n" +
+                    $"Remaining: {TimeFormatUtility.FormatDuration(remaining)}";
+            }
+        }
+
+        if (!showUpgradeText)
+        {
+            upgradeStatusText.text = "";
+            upgradeStatusText.gameObject.SetActive(false);
         }
     }
 
-    RefreshBasicFighterRow();
-    RefreshCargoRows();
-}
+        RefreshBasicFighterRow();
+        RefreshCargoRows();
+    }
 
     // Building Methods
     public void TryBuildRefinery()
@@ -468,38 +487,39 @@ void Start()
         UpdateUI();
     }
 
-public void TryBuildProbe()
-{
-    var p = GetPlanet();
-    if (p == null) return;
-
-    if (MetalFloor() < probeCostMetal ||
-        CrystalFloor() < probeCostCrystal ||
-        GasFloor() < probeCostGas)
+        public void TryBuildProbe()
     {
+        var p = GetPlanet();
+        if (p == null) return;
+
+        if (MetalFloor() < probeCostMetal ||
+            CrystalFloor() < probeCostCrystal ||
+            GasFloor() < probeCostGas)
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text = "Not enough resources";
+            }
+            return;
+        }
+
+        p.metal -= probeCostMetal;
+        p.crystal -= probeCostCrystal;
+        p.gas -= probeCostGas;
+
+        QueueShipBuild(p, ShipType.Probe);
+
         if (actionStatusText)
         {
-            actionStatusText.color = Color.red;
-            actionStatusText.text = "Not enough resources";
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.green;
+            actionStatusText.text = "Probe queued, 5s";
         }
-        return;
+
+        UpdateUI();
     }
-
-    p.metal -= probeCostMetal;
-    p.crystal -= probeCostCrystal;
-    p.gas -= probeCostGas;
-
-    // Add probe to GameState (this is the important line)
-    p.AddStationed(ShipType.Probe, 1);
-
-    if (actionStatusText)
-    {
-        actionStatusText.color = Color.green;
-        actionStatusText.text = "Built 1 Probe";
-    }
-
-    UpdateUI();
-}
 
     // Fleet
     public void OpenFleet()
@@ -508,125 +528,130 @@ public void TryBuildProbe()
         if (fleetPanel) fleetPanel.SetActive(true);
     }
 
-public void CloseFleet()     => CloseAllMenus();
+    public void CloseFleet()     => CloseAllMenus();
 
-public void TryBuildBasicFighter()
-{
-    var p = GetPlanet();
-    if (p == null) return;
-
-    if (MetalFloor() < basicFighterCostMetal)
+        public void TryBuildBasicFighter()
     {
+        var p = GetPlanet();
+        if (p == null) return;
+
+        if (MetalFloor() < basicFighterCostMetal)
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text = "Not enough Metal for Basic Fighter";
+            }
+            return;
+        }
+
+        p.metal -= basicFighterCostMetal;
+
+        QueueShipBuild(p, ShipType.BasicFighter);
+
         if (actionStatusText)
         {
-            actionStatusText.color = Color.red;
-            actionStatusText.text = "Not enough Metal for Basic Fighter";
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.green;
+            actionStatusText.text = "Basic Fighter queued, 5s";
         }
-        return;
+
+        UpdateUI();
+        RefreshBasicFighterRow();
     }
 
-    p.metal -= basicFighterCostMetal;
-
-    // ✅ Store fighters in PlanetState like every other ship
-    p.AddStationed(ShipType.BasicFighter, 1);
-
-    if (actionStatusText)
+        public void TryBuildSmallCargo()
     {
-        actionStatusText.color = Color.green;
-        actionStatusText.text = "Basic Fighter Built";
-    }
+        var p = GetPlanet();
+        if (p == null) return;
 
-    UpdateUI();
-    RefreshBasicFighterRow();
-}
+        if (MetalFloor() < smallCargoCostMetal)
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text = "Not enough Metal for Small Cargo";
+            }
+            return;
+        }
 
-public void TryBuildSmallCargo()
-{
-    var p = GetPlanet();
-    if (p == null) return;
+        p.metal -= smallCargoCostMetal;
+        QueueShipBuild(p, ShipType.SmallCargo);
 
-    if (MetalFloor() < smallCargoCostMetal)
-    {
         if (actionStatusText)
         {
-            actionStatusText.color = Color.red;
-            actionStatusText.text = "Not enough Metal for Small Cargo";
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.green;
+            actionStatusText.text = "Small Cargo queued, 5s";
         }
-        return;
+
+        UpdateUI();
+        RefreshCargoRows();
     }
 
-    p.metal -= smallCargoCostMetal;
-    p.AddStationed(ShipType.SmallCargo, 1);
-
-    if (actionStatusText)
+        public void TryBuildLargeCargo()
     {
-        actionStatusText.color = Color.green;
-        actionStatusText.text = "Small Cargo Built";
-    }
+        var p = GetPlanet();
+        if (p == null) return;
 
-    UpdateUI();
-    RefreshCargoRows();
-}
+        if (MetalFloor() < largeCargoCostMetal)
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text = "Not enough Metal for Large Cargo";
+            }
+            return;
+        }
 
-public void TryBuildLargeCargo()
-{
-    var p = GetPlanet();
-    if (p == null) return;
+        p.metal -= largeCargoCostMetal;
+        QueueShipBuild(p, ShipType.LargeCargo);
 
-    if (MetalFloor() < largeCargoCostMetal)
-    {
         if (actionStatusText)
         {
-            actionStatusText.color = Color.red;
-            actionStatusText.text = "Not enough Metal for Large Cargo";
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.green;
+            actionStatusText.text = "Large Cargo queued, 5s";
         }
-        return;
+
+        UpdateUI();
+        RefreshCargoRows();
     }
 
-    p.metal -= largeCargoCostMetal;
-    p.AddStationed(ShipType.LargeCargo, 1);
-
-    if (actionStatusText)
+    void RefreshBasicFighterRow()
     {
-        actionStatusText.color = Color.green;
-        actionStatusText.text = "Large Cargo Built";
-    }
+        if (basicFighterCostText)
+            basicFighterCostText.text = $"Cost: {basicFighterCostMetal} Metal";
 
-    UpdateUI();
-    RefreshCargoRows();
-}
+        if (gameStateHolder != null && gameStateHolder.state != null)
+        {
+            var state = gameStateHolder.state;
+            int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.BasicFighter);
+            int busy = GameStateQueries.GetBusyShips(state, ShipType.BasicFighter);
+            int total = stationed + busy;
 
-void RefreshBasicFighterRow()
-{
-    if (basicFighterCostText)
-        basicFighterCostText.text = $"Cost: {basicFighterCostMetal} Metal";
+            if (basicFighterOwnedText)
+                basicFighterOwnedText.text = $"Owned: {stationed}";
+        }
 
-    if (gameStateHolder != null && gameStateHolder.state != null)
+        if (buildBasicFighterButton)
+            buildBasicFighterButton.interactable = MetalFloor() >= basicFighterCostMetal;
+    }                                   
+
+    void RefreshCargoRows()
     {
-        var state = gameStateHolder.state;
-        int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.BasicFighter);
-        int busy = GameStateQueries.GetBusyShips(state, ShipType.BasicFighter);
-        int total = stationed + busy;
+        var p = GetPlanet();
+        if (p == null) return;
 
-        if (basicFighterOwnedText)
-            basicFighterOwnedText.text = $"{stationed}";
+        int sc = p.GetStationed(ShipType.SmallCargo);
+        int lc = p.GetStationed(ShipType.LargeCargo);
+
+        if (smallCargoOwnedText) smallCargoOwnedText.text = $"Owned: {sc}";
+        if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {lc}";
     }
-
-    if (buildBasicFighterButton)
-        buildBasicFighterButton.interactable = MetalFloor() >= basicFighterCostMetal;
-}
-
-void RefreshCargoRows()
-{
-    var p = GetPlanet();
-    if (p == null) return;
-
-    int sc = p.GetStationed(ShipType.SmallCargo);
-    int lc = p.GetStationed(ShipType.LargeCargo);
-
-    if (smallCargoOwnedText) smallCargoOwnedText.text = $"Owned: {sc}";
-    if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {lc}";
-}
 
     public void OpenBuild()
     {
@@ -634,29 +659,29 @@ void RefreshCargoRows()
         if (buildPanel) buildPanel.SetActive(true);
     }
 
-void CloseAllMenus()
-{
-    if (buildPanel) buildPanel.SetActive(false);
-    if (fleetPanel) fleetPanel.SetActive(false);
-}
+    void CloseAllMenus()
+    {
+        if (buildPanel) buildPanel.SetActive(false);
+        if (fleetPanel) fleetPanel.SetActive(false);
+    }
 
-public void CloseBuild() => CloseAllMenus();
+    public void CloseBuild() => CloseAllMenus();
 
-    double GetMetalPerSecond()
-{
-    var p = GetPlanet();
-    if (p == null) return 0;
+        double GetMetalPerSecond()
+    {
+        var p = GetPlanet();
+        if (p == null) return 0;
 
-    double probeMult = GetProbeCountMultiplier() * probeEfficiencyMult * globalEconomyMult;
-    double buildingMult = planetCollectionMult * globalEconomyMult;
+        double probeMult = GetProbeCountMultiplier() * probeEfficiencyMult * globalEconomyMult;
+        double buildingMult = planetCollectionMult * globalEconomyMult;
 
-    int totalProbes = GetTotalProbesFromGameState();
-    double probeIncome = (totalProbes * 0.2) * probeMult;
+        int totalProbes = GetTotalProbesFromGameState();
+        double probeIncome = (totalProbes * 0.2) * probeMult;
 
-    double buildingIncome = (p.metalRefineryLevel * 2.0) * buildingMult;
+        double buildingIncome = (p.metalRefineryLevel * 2.0) * buildingMult;
 
-    return probeIncome + buildingIncome;
-}
+        return probeIncome + buildingIncome;
+    }
 
     double GetCrystalPerSecond()
     {
@@ -700,23 +725,92 @@ public void CloseBuild() => CloseAllMenus();
         return stationed + busy;
     }
 
-// FORCE SHIP BUTTON
-#if UNITY_EDITOR
-public void Debug_ForceFoundShipsNextExpedition()
-{
-    ExpeditionResolver.Debug_ForceFoundShipsNext();
-}
-#endif
+    // Display Name for Upgrading Buildings
+    private string GetBuildingDisplayName(BuildingType type)
+    {
+        switch (type)
+        {
+            case BuildingType.MetalRefinery: return "Metal Refinery";
+            case BuildingType.CrystalMine: return "Crystal Mine";
+            case BuildingType.GasExtractor: return "Gas Extractor";
+            default: return type.ToString();
+        }
+    }
 
-    double GetProbeCountMultiplier()
-{
-    int totalProbes = GetTotalProbesFromGameState();
+    // FORCE SHIP BUTTON
+    #if UNITY_EDITOR
+    public void Debug_ForceFoundShipsNextExpedition()
+    {
+        ExpeditionResolver.Debug_ForceFoundShipsNext();
+    }
+    #endif
 
-    int extra = Mathf.Max(0, totalProbes - startingProbes);
-    double mult = 1.0 + (extra * bonusPerExtraProbe);
+        double GetProbeCountMultiplier()
+    {
+        int totalProbes = GetTotalProbesFromGameState();
 
-    return System.Math.Min(mult, maxProbeMultiplier);
-}
+        int extra = Mathf.Max(0, totalProbes - startingProbes);
+        double mult = 1.0 + (extra * bonusPerExtraProbe);
+
+        return System.Math.Min(mult, maxProbeMultiplier);
+    }
+
+    private const double ShipBuildTimeSeconds = 5.0;
+
+    private void QueueShipBuild(PlanetState p, ShipType shipType)
+    {
+        if (p == null) return;
+
+        double startTime = Time.time;
+
+        if (p.shipQueue != null && p.shipQueue.Count > 0)
+        {
+            double lastFinish = p.shipQueue[p.shipQueue.Count - 1].finishTime;
+            startTime = System.Math.Max(Time.time, lastFinish);
+        }
+
+        if (p.shipQueue == null)
+            p.shipQueue = new System.Collections.Generic.List<ShipQueueItem>();
+
+        p.shipQueue.Add(new ShipQueueItem
+        {
+            shipType = shipType,
+            finishTime = startTime + ShipBuildTimeSeconds
+        });
+    }
+
+    private void TickShipQueue(PlanetState p)
+    {
+        if (p == null || p.shipQueue == null || p.shipQueue.Count == 0)
+            return;
+
+        while (p.shipQueue.Count > 0 && Time.time >= p.shipQueue[0].finishTime)
+        {
+            ShipQueueItem finished = p.shipQueue[0];
+            p.shipQueue.RemoveAt(0);
+
+            p.AddStationed(finished.shipType, 1);
+
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.green;
+                actionStatusText.text = $"{GetShipDisplayName(finished.shipType)} built";
+            }
+        }
+    }
+
+    private string GetShipDisplayName(ShipType type)
+    {
+        switch (type)
+        {
+            case ShipType.Probe: return "Probe";
+            case ShipType.SmallCargo: return "Small Cargo";
+            case ShipType.LargeCargo: return "Large Cargo";
+            case ShipType.BasicFighter: return "Basic Fighter";
+            default: return type.ToString();
+        }
+    }
 
     // Cheat Button
     #if UNITY_EDITOR

@@ -2,8 +2,15 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 
-[Serializable]
-public class PlanetState
+    [Serializable]
+    public class ShipQueueItem
+    {
+        public ShipType shipType;
+        public double finishTime;
+    }
+
+    [Serializable]
+    public class PlanetState
 {
     public string planetId;
 
@@ -20,6 +27,9 @@ public class PlanetState
 
     // ships stationed on the planet (not traveling)
     public Dictionary<ShipType, int> stationedShips = new Dictionary<ShipType, int>();
+
+    // Ship Queue
+    public List<ShipQueueItem> shipQueue = new List<ShipQueueItem>();
 
     // Active building upgrade
     public BuildingUpgradeJob activeBuildingUpgrade;

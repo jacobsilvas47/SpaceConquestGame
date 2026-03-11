@@ -150,17 +150,6 @@ public class ResourceManager : MonoBehaviour
 void Start()
 {
     // Start with clean screen
-    if (buildPanel) buildPanel.SetActive(false);
-    if (fleetPanel) fleetPanel.SetActive(false);
-
-    // Open buttons
-    if (buildMenuButton) buildMenuButton.onClick.AddListener(OpenBuild);
-    if (fleetButton) fleetButton.onClick.AddListener(OpenFleet);
-
-    // Close buttons
-    if (closeBuildButton) closeBuildButton.onClick.AddListener(CloseBuild);
-    if (closeFleetButton) closeFleetButton.onClick.AddListener(CloseFleet);
-
     if (gameStateHolder == null)
 {
     gameStateHolder = FindFirstObjectByType<GameStateHolder>();
@@ -238,9 +227,9 @@ void Start()
         var p = gameStateHolder.state.GetPlanet(planetId);
         if (p != null)
         {
-            if (metalText) metalText.text = $"Metal: {System.Math.Floor(p.metal)}";
-            if (crystalText) crystalText.text = $"Crystal: {System.Math.Floor(p.crystal)}";
-            if (gasText) gasText.text = $"Gas: {System.Math.Floor(p.gas)}";
+            if (metalText) metalText.text = $"Metal: {NumberFormatter.Format(System.Math.Floor(p.metal))}";
+            if (crystalText) crystalText.text = $"Crystal: {NumberFormatter.Format(System.Math.Floor(p.crystal))}";
+            if (gasText) gasText.text = $"Gas: {NumberFormatter.Format(System.Math.Floor(p.gas))}";
         }
     }
         
@@ -447,13 +436,12 @@ public void TryBuildProbe()
     UpdateUI();
 }
 
-// Fleet
-public void OpenFleet()
-{
-    bool wasOpen = fleetPanel && fleetPanel.activeSelf;
-    CloseAllMenus();
-    if (fleetPanel) fleetPanel.SetActive(!wasOpen);
-}
+    // Fleet
+    public void OpenFleet()
+    {
+        CloseAllMenus();
+        if (fleetPanel) fleetPanel.SetActive(true);
+    }
 
 public void CloseFleet()     => CloseAllMenus();
 
@@ -575,12 +563,11 @@ void RefreshCargoRows()
     if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {lc}";
 }
 
-public void OpenBuild()
-{
-    bool wasOpen = buildPanel && buildPanel.activeSelf;
-    CloseAllMenus();
-    if (buildPanel) buildPanel.SetActive(!wasOpen);
-}
+    public void OpenBuild()
+    {
+        CloseAllMenus();
+        if (buildPanel) buildPanel.SetActive(true);
+    }
 
 void CloseAllMenus()
 {

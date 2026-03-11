@@ -31,6 +31,11 @@ public class ExpeditionSlotsListUI : MonoBehaviour
         Rebuild();
     }
 
+    void OnEnable()
+    {
+        Rebuild();
+    }
+
     private void Rebuild()
     {
         if (gameStateHolder == null || gameStateHolder.state == null) return;

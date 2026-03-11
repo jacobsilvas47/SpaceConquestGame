@@ -80,6 +80,8 @@
     <Compile Include="Assets/Scripts/UI/ExpeditionSlotListUI.cs" />
     <Compile Include="Assets/Scripts/Core/ExpeditionLogEntry.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/ShaderPropAnimator.cs" />
+    <Compile Include="Assets/Scripts/Expeditions/ExpeditionTier.cs" />
+    <Compile Include="Assets/Scripts/UI/NumberFormatter.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryManager.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextInfoDebugTool.cs" />
     <Compile Include="Assets/Scripts/Core/MissionStatus.cs" />
@@ -116,6 +118,7 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TeleType.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextEventCheck.cs" />
     <Compile Include="Assets/Scripts/Core/PlanetState.cs" />
+    <Compile Include="Assets/Scripts/Expeditions/ExpeditionRules.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextMeshProFloatingText.cs" />
     <Compile Include="Assets/Scripts/Core/ExpeditionMission.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryStack.cs" />

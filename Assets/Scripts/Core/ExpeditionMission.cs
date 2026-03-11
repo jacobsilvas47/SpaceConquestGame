@@ -5,6 +5,8 @@ using UnityEngine;
 [Serializable]
 public class ExpeditionMission : Mission
 {
+    public ExpeditionTier tier = ExpeditionTier.Tier1;
+
     public int rewardMetal;
     public int rewardCrystal;
     public int rewardGas;
@@ -16,12 +18,12 @@ public class ExpeditionMission : Mission
     public bool resultShown = false;
     public List<ExpeditionItemReward> itemsFound = new List<ExpeditionItemReward>();
 
-
     public ExpeditionMission(string originPlanetId, string fleetId, int seed)
         : base(MissionType.Expedition, originPlanetId, targetPlanetId: "deep_space", fleetId: fleetId)
     {
         this.seed = seed;
         resolved = false;
         outcomeSummary = "";
+        tier = ExpeditionTier.Tier1;
     }
 }

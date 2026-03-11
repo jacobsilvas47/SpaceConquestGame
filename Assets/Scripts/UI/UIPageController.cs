@@ -1,58 +1,70 @@
 using UnityEngine;
 
-public class UIPageController : MonoBehaviour
+public class UIController : MonoBehaviour
 {
-    [SerializeField] private GameObject mainPage;
-    [SerializeField] private GameObject buildPage;
-    [SerializeField] private GameObject expeditionsPage;
-    [SerializeField] private GameObject consolePage;
-    [SerializeField] private GameObject inventoryPage;
-    [SerializeField] private ConsolePageUI consolePageUI;
+    public GameObject mainPage;
+    public GameObject buildPage;
+    public GameObject fleetPage;
+    public GameObject expeditionsPage;
+    public GameObject consolePage;
+    public GameObject inventoryPage;
 
-    private void Start()
-    {
-        ShowMain();
-    }
+    public GameObject resourceHUD;
 
-    private void HideAll()
+    void HideAllPages()
     {
         if (mainPage) mainPage.SetActive(false);
         if (buildPage) buildPage.SetActive(false);
+        if (fleetPage) fleetPage.SetActive(false);
         if (expeditionsPage) expeditionsPage.SetActive(false);
         if (consolePage) consolePage.SetActive(false);
         if (inventoryPage) inventoryPage.SetActive(false);
     }
 
-    public void ShowMain()
+    void SetResourceHUDVisible(bool visible)
     {
-        HideAll();
+        if (resourceHUD) resourceHUD.SetActive(visible);
+    }
+
+    public void OpenMainPage()
+    {
+        HideAllPages();
         if (mainPage) mainPage.SetActive(true);
+        SetResourceHUDVisible(true);
     }
 
-    public void ShowBuild()
+    public void OpenBuildPage()
     {
-        HideAll();
+        HideAllPages();
         if (buildPage) buildPage.SetActive(true);
+        SetResourceHUDVisible(true);
     }
 
-    public void ShowExpeditions()
+    public void OpenFleetPage()
     {
-        HideAll();
+        HideAllPages();
+        if (fleetPage) fleetPage.SetActive(true);
+        SetResourceHUDVisible(true);
+    }
+
+    public void OpenExpeditionsPage()
+    {
+        HideAllPages();
         if (expeditionsPage) expeditionsPage.SetActive(true);
+        SetResourceHUDVisible(true);
     }
 
-    public void ShowConsole()
+    public void OpenConsolePage()
     {
-        HideAll();
+        HideAllPages();
         if (consolePage) consolePage.SetActive(true);
-
-        if (consolePageUI != null)
-            consolePageUI.Refresh();
+        SetResourceHUDVisible(false);
     }
 
-    public void ShowInventory()
+    public void OpenInventoryPage()
     {
-        HideAll();
+        HideAllPages();
         if (inventoryPage) inventoryPage.SetActive(true);
+        SetResourceHUDVisible(false);
     }
 }

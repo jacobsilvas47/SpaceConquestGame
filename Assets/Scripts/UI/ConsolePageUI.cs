@@ -21,6 +21,11 @@ public class ConsolePageUI : MonoBehaviour
         Refresh();
     }
 
+    void OnEnable()
+    {
+        Refresh();
+    }
+
     public void Close()
     {
         if (consolePage) consolePage.SetActive(false);

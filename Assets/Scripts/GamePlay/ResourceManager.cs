@@ -138,6 +138,15 @@ using UnityEngine.UI;
     public TMPro.TextMeshProUGUI basicFighterOwnedText;
     public TMPro.TextMeshProUGUI basicFighterCostText;
 
+    [Header("Fleet Quantity Inputs")]
+    public TMP_InputField basicFighterInput;
+    public TMP_InputField smallCargoInput;
+    public TMP_InputField largeCargoInput;
+    public TMP_InputField probeInput;
+    
+    [Header("Fleet Batch Build UI")]
+    public Button buildAllShipsButton;
+
     [Header("Fleet")]
     public int basicFighterCostMetal = 50;
 
@@ -487,41 +496,23 @@ using UnityEngine.UI;
         UpdateUI();
     }
 
-        public void TryBuildProbe()
+    // Fleet
+
+        // Reset Inputs
+        private void ResetInput(TMP_InputField inputField)
     {
-        var p = GetPlanet();
-        if (p == null) return;
-
-        if (MetalFloor() < probeCostMetal ||
-            CrystalFloor() < probeCostCrystal ||
-            GasFloor() < probeCostGas)
-        {
-            if (actionStatusText)
-            {
-                actionStatusText.gameObject.SetActive(true);
-                actionStatusText.color = Color.red;
-                actionStatusText.text = "Not enough resources";
-            }
-            return;
-        }
-
-        p.metal -= probeCostMetal;
-        p.crystal -= probeCostCrystal;
-        p.gas -= probeCostGas;
-
-        QueueShipBuild(p, ShipType.Probe);
-
-        if (actionStatusText)
-        {
-            actionStatusText.gameObject.SetActive(true);
-            actionStatusText.color = Color.green;
-            actionStatusText.text = "Probe queued, 5s";
-        }
-
-        UpdateUI();
+        if (inputField != null)
+            inputField.text = "1";
     }
 
-    // Fleet
+    private void ResetBatchInputs()
+    {
+        if (basicFighterInput) basicFighterInput.text = "";
+        if (smallCargoInput) smallCargoInput.text = "";
+        if (largeCargoInput) largeCargoInput.text = "";
+        if (probeInput) probeInput.text = "";
+    }
+    
     public void OpenFleet()
     {
         CloseAllMenus();
@@ -530,33 +521,65 @@ using UnityEngine.UI;
 
     public void CloseFleet()     => CloseAllMenus();
 
-        public void TryBuildBasicFighter()
+        private int ReadBuildAmount(TMP_InputField inputField)
+    {
+        if (inputField == null)
+            return 1;
+
+        if (string.IsNullOrWhiteSpace(inputField.text))
+            return 1;
+
+        if (!int.TryParse(inputField.text, out int amount))
+            return 1;
+
+        return Mathf.Max(1, amount);
+    }
+
+    private int ReadBatchAmount(TMP_InputField inputField)
+    {
+        if (inputField == null)
+            return 0;
+
+        if (string.IsNullOrWhiteSpace(inputField.text))
+            return 0;
+
+        if (!int.TryParse(inputField.text, out int amount))
+            return 0;
+
+        return Mathf.Max(0, amount);
+    }
+
+            public void TryBuildBasicFighter()
     {
         var p = GetPlanet();
         if (p == null) return;
 
-        if (MetalFloor() < basicFighterCostMetal)
+        int amount = ReadBuildAmount(basicFighterInput);
+        int totalMetalCost = basicFighterCostMetal * amount;
+
+        if (MetalFloor() < totalMetalCost)
         {
             if (actionStatusText)
             {
                 actionStatusText.gameObject.SetActive(true);
                 actionStatusText.color = Color.red;
-                actionStatusText.text = "Not enough Metal for Basic Fighter";
+                actionStatusText.text = $"Not enough Metal for {amount} Basic Fighter";
             }
             return;
         }
 
-        p.metal -= basicFighterCostMetal;
+        p.metal -= totalMetalCost;
 
-        QueueShipBuild(p, ShipType.BasicFighter);
+        QueueShipBuild(p, ShipType.BasicFighter, amount);
 
         if (actionStatusText)
         {
             actionStatusText.gameObject.SetActive(true);
             actionStatusText.color = Color.green;
-            actionStatusText.text = "Basic Fighter queued, 5s";
+            actionStatusText.text = $"{amount} Basic Fighter queued";
         }
 
+        ResetInput(basicFighterInput);
         UpdateUI();
         RefreshBasicFighterRow();
     }
@@ -566,27 +589,31 @@ using UnityEngine.UI;
         var p = GetPlanet();
         if (p == null) return;
 
-        if (MetalFloor() < smallCargoCostMetal)
+        int amount = ReadBuildAmount(smallCargoInput);
+        int totalMetalCost = smallCargoCostMetal * amount;
+
+        if (MetalFloor() < totalMetalCost)
         {
             if (actionStatusText)
             {
                 actionStatusText.gameObject.SetActive(true);
                 actionStatusText.color = Color.red;
-                actionStatusText.text = "Not enough Metal for Small Cargo";
+                actionStatusText.text = $"Not enough Metal for {amount} Small Cargo";
             }
             return;
         }
 
-        p.metal -= smallCargoCostMetal;
-        QueueShipBuild(p, ShipType.SmallCargo);
+        p.metal -= totalMetalCost;
+        QueueShipBuild(p, ShipType.SmallCargo, amount);
 
         if (actionStatusText)
         {
             actionStatusText.gameObject.SetActive(true);
             actionStatusText.color = Color.green;
-            actionStatusText.text = "Small Cargo queued, 5s";
+            actionStatusText.text = $"{amount} Small Cargo queued";
         }
 
+        ResetInput(smallCargoInput);
         UpdateUI();
         RefreshCargoRows();
     }
@@ -596,27 +623,31 @@ using UnityEngine.UI;
         var p = GetPlanet();
         if (p == null) return;
 
-        if (MetalFloor() < largeCargoCostMetal)
+        int amount = ReadBuildAmount(largeCargoInput);
+        int totalMetalCost = largeCargoCostMetal * amount;
+
+        if (MetalFloor() < totalMetalCost)
         {
             if (actionStatusText)
             {
                 actionStatusText.gameObject.SetActive(true);
                 actionStatusText.color = Color.red;
-                actionStatusText.text = "Not enough Metal for Large Cargo";
+                actionStatusText.text = $"Not enough Metal for {amount} Large Cargo";
             }
             return;
         }
 
-        p.metal -= largeCargoCostMetal;
-        QueueShipBuild(p, ShipType.LargeCargo);
+        p.metal -= totalMetalCost;
+        QueueShipBuild(p, ShipType.LargeCargo, amount);
 
         if (actionStatusText)
         {
             actionStatusText.gameObject.SetActive(true);
             actionStatusText.color = Color.green;
-            actionStatusText.text = "Large Cargo queued, 5s";
+            actionStatusText.text = $"{amount} Large Cargo queued";
         }
 
+        ResetInput(largeCargoInput);
         UpdateUI();
         RefreshCargoRows();
     }
@@ -639,6 +670,127 @@ using UnityEngine.UI;
 
         if (buildBasicFighterButton)
             buildBasicFighterButton.interactable = MetalFloor() >= basicFighterCostMetal;
+    }
+
+    public void TryBuildProbe()
+    {
+        var p = GetPlanet();
+        if (p == null) return;
+
+        int amount = ReadBuildAmount(probeInput);
+
+        int totalMetalCost = probeCostMetal * amount;
+        int totalCrystalCost = probeCostCrystal * amount;
+        int totalGasCost = probeCostGas * amount;
+
+        if (MetalFloor() < totalMetalCost ||
+            CrystalFloor() < totalCrystalCost ||
+            GasFloor() < totalGasCost)
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text = $"Not enough resources for {amount} Probe";
+            }
+            return;
+        }
+
+        p.metal -= totalMetalCost;
+        p.crystal -= totalCrystalCost;
+        p.gas -= totalGasCost;
+
+        QueueShipBuild(p, ShipType.Probe, amount);
+
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.green;
+            actionStatusText.text = $"{amount} Probe queued";
+        }
+
+        ResetInput(probeInput);
+        UpdateUI();
+    }
+
+    public void TryBuildAllShips()
+    {
+        var p = GetPlanet();
+        if (p == null) return;
+
+        int basicFighters = ReadBatchAmount(basicFighterInput);
+        int smallCargos = ReadBatchAmount(smallCargoInput);
+        int largeCargos = ReadBatchAmount(largeCargoInput);
+        int probes = ReadBatchAmount(probeInput);
+
+        int totalRequested = basicFighters + smallCargos + largeCargos + probes;
+
+        if (totalRequested <= 0)
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text = "Enter at least one ship amount";
+            }
+            return;
+        }
+
+        int totalMetalCost =
+            (basicFighters * basicFighterCostMetal) +
+            (smallCargos * smallCargoCostMetal) +
+            (largeCargos * largeCargoCostMetal) +
+            (probes * probeCostMetal);
+
+        int totalCrystalCost =
+            probes * probeCostCrystal;
+
+        int totalGasCost =
+            probes * probeCostGas;
+
+        if (MetalFloor() < totalMetalCost ||
+            CrystalFloor() < totalCrystalCost ||
+            GasFloor() < totalGasCost)
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text =
+                    $"Not enough resources\nNeed {totalMetalCost}M / {totalCrystalCost}C / {totalGasCost}G";
+            }
+            return;
+        }
+
+        p.metal -= totalMetalCost;
+        p.crystal -= totalCrystalCost;
+        p.gas -= totalGasCost;
+
+        if (basicFighters > 0)
+            QueueShipBuild(p, ShipType.BasicFighter, basicFighters);
+
+        if (smallCargos > 0)
+            QueueShipBuild(p, ShipType.SmallCargo, smallCargos);
+
+        if (largeCargos > 0)
+            QueueShipBuild(p, ShipType.LargeCargo, largeCargos);
+
+        if (probes > 0)
+            QueueShipBuild(p, ShipType.Probe, probes);
+
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.green;
+            actionStatusText.text =
+                $"Queued {totalRequested} ship(s)\n" +
+                $"Spent {totalMetalCost}M / {totalCrystalCost}C / {totalGasCost}G";
+        }
+
+        ResetBatchInputs();
+        UpdateUI();
+        RefreshBasicFighterRow();
+        RefreshCargoRows();
     }                                   
 
     void RefreshCargoRows()
@@ -757,26 +909,31 @@ using UnityEngine.UI;
 
     private const double ShipBuildTimeSeconds = 5.0;
 
-    private void QueueShipBuild(PlanetState p, ShipType shipType)
+    private void QueueShipBuild(PlanetState p, ShipType shipType, int amount)
     {
-        if (p == null) return;
+        if (p == null || amount <= 0) return;
+
+        if (p.shipQueue == null)
+            p.shipQueue = new System.Collections.Generic.List<ShipQueueItem>();
 
         double startTime = Time.time;
 
-        if (p.shipQueue != null && p.shipQueue.Count > 0)
+        if (p.shipQueue.Count > 0)
         {
             double lastFinish = p.shipQueue[p.shipQueue.Count - 1].finishTime;
             startTime = System.Math.Max(Time.time, lastFinish);
         }
 
-        if (p.shipQueue == null)
-            p.shipQueue = new System.Collections.Generic.List<ShipQueueItem>();
-
-        p.shipQueue.Add(new ShipQueueItem
+        for (int i = 0; i < amount; i++)
         {
-            shipType = shipType,
-            finishTime = startTime + ShipBuildTimeSeconds
-        });
+            p.shipQueue.Add(new ShipQueueItem
+            {
+                shipType = shipType,
+                finishTime = startTime + ShipBuildTimeSeconds
+            });
+
+            startTime += ShipBuildTimeSeconds;
+        }
     }
 
     private void TickShipQueue(PlanetState p)

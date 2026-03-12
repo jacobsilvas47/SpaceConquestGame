@@ -20,10 +20,7 @@ public class BattleTest : MonoBehaviour
 
         BattleResult result = BattleResolver.Resolve(attacker, defender);
 
-        Debug.Log("=== BATTLE RESULT ===");
-        Debug.Log("Attacker Won: " + result.attackerWon);
-        Debug.Log("Attacker Loss %: " + result.attackerLossPercent);
-        Debug.Log("Defender Loss %: " + result.defenderLossPercent);
+        Debug.Log(BattleReportFormatter.Format(result, attacker, defender));
 
         Debug.Log("=== AFTER BATTLE ===");
         Debug.Log("Attacker Remaining Power: " + attacker.CombatPowerScore());
@@ -31,9 +28,6 @@ public class BattleTest : MonoBehaviour
 
         LogFleet("Attacker Remaining Fleet", attacker);
         LogFleet("Defender Remaining Fleet", defender);
-
-        LogLosses("Attacker Losses", result.attackerLosses);
-        LogLosses("Defender Losses", result.defenderLosses);
     }
 
     private void LogFleet(string label, Fleet fleet)
@@ -42,17 +36,7 @@ public class BattleTest : MonoBehaviour
 
         foreach (var kvp in fleet.ships)
         {
-            Debug.Log(kvp.Key + ": " + kvp.Value);
-        }
-    }
-
-    private void LogLosses(string label, BattleLosses losses)
-    {
-        Debug.Log("---- " + label + " ----");
-
-        foreach (var kvp in losses.lostShips)
-        {
-            Debug.Log(kvp.Key + ": " + kvp.Value);
+            Debug.Log(ShipDatabase.DisplayName(kvp.Key) + ": " + kvp.Value);
         }
     }
 }

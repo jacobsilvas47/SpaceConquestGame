@@ -53,7 +53,7 @@ public static class ExpeditionResolver
 
         var fleet = state.GetFleet(mission.fleetId);
 
-        int cap = (fleet != null) ? fleet.TotalCargoCapacity() : 0;
+        int cap = (fleet != null) ? fleet.TotalCargo() : 0;
         if (cap <= 0) cap = 50;
 
         Debug.Log($"[EXPEDITION] FleetId={mission.fleetId} Ships: " +

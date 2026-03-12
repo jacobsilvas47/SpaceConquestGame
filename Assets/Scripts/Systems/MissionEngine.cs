@@ -53,7 +53,7 @@ public static class MissionEngine
         var mission = new ExpeditionMission(fleet.originPlanetId, fleetId, seed);
         mission.tier = ExpeditionRules.DetermineTier(fleet);
 
-        int cap = fleet.TotalCargoCapacity();
+        int cap = fleet.TotalCargo();
         mission.cargoCapacity = cap;
 
         double tierDurationMultiplier = ExpeditionRules.GetDurationMultiplier(mission.tier);

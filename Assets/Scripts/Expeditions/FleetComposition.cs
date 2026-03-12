@@ -4,21 +4,20 @@ using UnityEngine;
 [Serializable]
 public class FleetComposition
 {
-
     public int basicFighters = 0;
     public int probes;
     public int smallCargo;
     public int largeCargo;
 
-public int TotalStorage()
+    public int TotalStorage()
     {
-    return probes * ShipStats.CargoCapacity(ShipType.Probe)
-         + smallCargo * ShipStats.CargoCapacity(ShipType.SmallCargo)
-         + largeCargo * ShipStats.CargoCapacity(ShipType.LargeCargo);
+        return probes * ShipDatabase.CargoCapacity(ShipType.Probe)
+             + smallCargo * ShipDatabase.CargoCapacity(ShipType.SmallCargo)
+             + largeCargo * ShipDatabase.CargoCapacity(ShipType.LargeCargo);
     }
 
-public int TotalShips()
+    public int TotalShips()
     {
-    return probes + smallCargo + largeCargo + basicFighters;
+        return probes + smallCargo + largeCargo + basicFighters;
     }
 }

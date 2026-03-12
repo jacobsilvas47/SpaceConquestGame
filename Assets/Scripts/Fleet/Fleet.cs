@@ -1,5 +1,4 @@
 using UnityEngine;
-
 using System;
 using System.Collections.Generic;
 
@@ -8,7 +7,7 @@ public class Fleet
 {
     public string fleetId;
 
-    // which planet it launched from (later, can be a real planet id)
+    // which planet it launched from
     public string originPlanetId;
 
     // ship counts by type
@@ -23,18 +22,6 @@ public class Fleet
     public int GetCount(ShipType type)
     {
         return ships.TryGetValue(type, out int count) ? count : 0;
-    }
-
-    public int TotalCargoCapacity()
-    {
-        int total = 0;
-
-        foreach (var kvp in ships)
-    {
-        total += kvp.Value * ShipStats.CargoCapacity(kvp.Key);
-    }
-
-    return total;
     }
 
     public void AddShips(ShipType type, int amount)
@@ -65,5 +52,35 @@ public class Fleet
             if (kvp.Value > 0) return false;
         }
         return true;
+    }
+
+    public int TotalAttack()
+    {
+        return FleetCombatCalculator.GetTotalAttack(this);
+    }
+
+    public int TotalDefense()
+    {
+        return FleetCombatCalculator.GetTotalDefense(this);
+    }
+
+    public int TotalHp()
+    {
+        return FleetCombatCalculator.GetTotalHp(this);
+    }
+
+    public int TotalCargo()
+    {
+        return FleetCombatCalculator.GetTotalCargo(this);
+    }
+
+    public int TotalShipCount()
+    {
+        return FleetCombatCalculator.GetTotalShipCount(this);
+    }
+
+    public int CombatPowerScore()
+    {
+        return FleetCombatCalculator.GetCombatPowerScore(this);
     }
 }

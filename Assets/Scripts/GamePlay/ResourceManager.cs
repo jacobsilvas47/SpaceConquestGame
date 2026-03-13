@@ -791,7 +791,46 @@ using UnityEngine.UI;
         UpdateUI();
         RefreshBasicFighterRow();
         RefreshCargoRows();
-    }                                   
+    } 
+
+    public void TryQueueShipBuild(ShipType shipType, int amount)
+    {
+        var p = GetPlanet();
+        if (p == null || gameStateHolder == null || gameStateHolder.state == null) return;
+        if (amount <= 0) return;
+
+        for (int i = 0; i < amount; i++)
+        {
+            bool success = ShipyardQueueSystem.TryEnqueueShip(
+                gameStateHolder.state,
+                planetId,
+                shipType,
+                out string error
+            );
+
+            if (!success)
+            {
+                if (actionStatusText)
+                {
+                    actionStatusText.gameObject.SetActive(true);
+                    actionStatusText.color = Color.red;
+                    actionStatusText.text = error;
+                }
+
+                UpdateUI();
+                return;
+            }
+        }
+
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.green;
+            actionStatusText.text = $"{amount} {ShipDatabase.DisplayName(shipType)} queued";
+        }
+
+        UpdateUI();
+    }                                  
 
     void RefreshCargoRows()
     {

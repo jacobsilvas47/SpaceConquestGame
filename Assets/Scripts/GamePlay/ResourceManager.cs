@@ -549,6 +549,35 @@ using UnityEngine.UI;
         return Mathf.Max(0, amount);
     }
 
+       public bool TryBuildShip(ShipType shipType, int amount, out string error)
+    {
+        error = null;
+
+        if (gameStateHolder == null || gameStateHolder.state == null)
+        {
+            error = "Game state missing.";
+            return false;
+        }
+
+        if (amount <= 0)
+        {
+            error = "Enter an amount greater than 0.";
+            return false;
+        }
+
+        for (int i = 0; i < amount; i++)
+        {
+            if (!ShipyardQueueSystem.TryEnqueueShip(gameStateHolder.state, planetId, shipType, out error))
+            {
+                UpdateUI();
+                return false;
+            }
+        }
+
+        UpdateUI();
+        return true;
+    }
+
             public void TryBuildBasicFighter()
     {
         var p = GetPlanet();
@@ -793,43 +822,33 @@ using UnityEngine.UI;
         RefreshCargoRows();
     } 
 
-    public void TryQueueShipBuild(ShipType shipType, int amount)
+    public bool TryQueueShipBuild(ShipType shipType, int amount)
     {
-        var p = GetPlanet();
-        if (p == null || gameStateHolder == null || gameStateHolder.state == null) return;
-        if (amount <= 0) return;
+        if (gameStateHolder == null || gameStateHolder.state == null)
+        {
+            Debug.LogError("[ResourceManager] Game state missing.");
+            return false;
+        }
+
+        if (amount <= 0)
+        {
+            Debug.LogWarning("[ResourceManager] Amount must be greater than 0.");
+            return false;
+        }
 
         for (int i = 0; i < amount; i++)
         {
-            bool success = ShipyardQueueSystem.TryEnqueueShip(
-                gameStateHolder.state,
-                planetId,
-                shipType,
-                out string error
-            );
-
-            if (!success)
+            if (!ShipyardQueueSystem.TryEnqueueShip(gameStateHolder.state, planetId, shipType, out string error))
             {
-                if (actionStatusText)
-                {
-                    actionStatusText.gameObject.SetActive(true);
-                    actionStatusText.color = Color.red;
-                    actionStatusText.text = error;
-                }
-
+                Debug.LogWarning($"[ResourceManager] Failed to queue {shipType}: {error}");
                 UpdateUI();
-                return;
+                return false;
             }
         }
 
-        if (actionStatusText)
-        {
-            actionStatusText.gameObject.SetActive(true);
-            actionStatusText.color = Color.green;
-            actionStatusText.text = $"{amount} {ShipDatabase.DisplayName(shipType)} queued";
-        }
-
+        Debug.Log($"[ResourceManager] Queued {amount} {shipType}(s).");
         UpdateUI();
+        return true;
     }                                  
 
     void RefreshCargoRows()

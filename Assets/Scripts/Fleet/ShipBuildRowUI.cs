@@ -22,6 +22,7 @@ public class ShipBuildRowUI : MonoBehaviour
     private void Start()
     {
         Refresh();
+
         if (buildButton != null)
             buildButton.onClick.AddListener(OnBuildClicked);
     }
@@ -45,15 +46,31 @@ public class ShipBuildRowUI : MonoBehaviour
 
     private void OnBuildClicked()
     {
-        if (resourceManager == null) return;
-        if (amountInput == null) return;
+        if (resourceManager == null)
+        {
+            Debug.LogError($"[ShipBuildRowUI] ResourceManager missing on {name}");
+            return;
+        }
+
+        if (amountInput == null)
+        {
+            Debug.LogError($"[ShipBuildRowUI] Amount input missing on {name}");
+            return;
+        }
 
         if (!int.TryParse(amountInput.text, out int amount) || amount <= 0)
+        {
+            Debug.LogWarning($"[ShipBuildRowUI] Invalid amount '{amountInput.text}' for {shipType}");
             return;
+        }
 
-        resourceManager.TryQueueShipBuild(shipType, amount);
-        amountInput.text = "";
-        Refresh();
+        bool success = resourceManager.TryQueueShipBuild(shipType, amount);
+
+        if (success)
+        {
+            amountInput.text = "";
+            Refresh();
+        }
     }
 
     public int GetRequestedAmount()
@@ -74,4 +91,3 @@ public class ShipBuildRowUI : MonoBehaviour
             amountInput.text = "";
     }
 }
-

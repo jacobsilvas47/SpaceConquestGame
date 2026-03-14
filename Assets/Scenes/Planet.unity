@@ -4098,7 +4098,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 1
   nameText: {fileID: 120210691}
   costText: {fileID: 878084077}
   ownedText: {fileID: 1419733066}
@@ -5014,7 +5014,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 42
   nameText: {fileID: 1982144958}
   costText: {fileID: 1443366643}
   ownedText: {fileID: 567869406}
@@ -6299,10 +6299,10 @@ RectTransform:
   - {fileID: 2112897401}
   m_Father: {fileID: 1146034862}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -600, y: 0}
-  m_SizeDelta: {x: 200, y: 100}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: -599.9999, y: -231.23003}
+  m_SizeDelta: {x: 150, y: 80}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &291986441
 MonoBehaviour:
@@ -8238,7 +8238,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 299.99994, y: -340}
-  m_SizeDelta: {x: 1920, y: 100}
+  m_SizeDelta: {x: 1920, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &375404552
 MonoBehaviour:
@@ -9545,11 +9545,11 @@ RectTransform:
   - {fileID: 604174784}
   m_Father: {fileID: 1778925926}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 175, y: -50}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: -550, y: 0}
   m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &404770751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12042,7 +12042,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 12
   nameText: {fileID: 516250667}
   costText: {fileID: 1117309941}
   ownedText: {fileID: 697548393}
@@ -12153,7 +12153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 11
   nameText: {fileID: 1940018127}
   costText: {fileID: 780208264}
   ownedText: {fileID: 210304490}
@@ -12483,19 +12483,19 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 555388613}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 975466514}
-  m_Father: {fileID: 1146034862}
+  m_Father: {fileID: 560579336}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 160, y: 30}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_SizeDelta: {x: 150, y: 80}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &555388615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12539,7 +12539,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 555388616}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1555216637}
+        m_TargetAssemblyTypeName: FleetPageUI, Assembly-CSharp
+        m_MethodName: OpenFleetBuildPanel
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &555388616
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12578,6 +12590,69 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 555388613}
   m_CullTransparentMesh: 1
+--- !u!1 &560579335
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 560579336}
+  - component: {fileID: 560579337}
+  m_Layer: 5
+  m_Name: ButtonsRow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &560579336
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 560579335}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 555388614}
+  m_Father: {fileID: 1146034862}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: -300, y: -19.14}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0, y: 0}
+--- !u!114 &560579337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 560579335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1 &560899847
 GameObject:
   m_ObjectHideFlags: 0
@@ -13070,7 +13145,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1500, y: 950}
+  m_SizeDelta: {x: 1050, y: 800}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &575089758
 MonoBehaviour:
@@ -16649,7 +16724,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 21
   nameText: {fileID: 952400445}
   costText: {fileID: 1571368917}
   ownedText: {fileID: 370832407}
@@ -18997,7 +19072,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 40
   nameText: {fileID: 1892664567}
   costText: {fileID: 398307536}
   ownedText: {fileID: 1740177669}
@@ -20903,7 +20978,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 10
   nameText: {fileID: 680749974}
   costText: {fileID: 260957325}
   ownedText: {fileID: 882567889}
@@ -21827,7 +21902,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: Build
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -21854,13 +21929,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -22207,7 +22282,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 25.900024}
   m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1005286540
@@ -22755,7 +22830,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 52
   nameText: {fileID: 488640223}
   costText: {fileID: 393138261}
   ownedText: {fileID: 1668909587}
@@ -24065,7 +24140,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 53
   nameText: {fileID: 819561011}
   costText: {fileID: 1337199203}
   ownedText: {fileID: 1606251596}
@@ -24302,7 +24377,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 41
   nameText: {fileID: 1997662292}
   costText: {fileID: 255591398}
   ownedText: {fileID: 1015775592}
@@ -25915,7 +25990,7 @@ RectTransform:
   - {fileID: 452976799}
   - {fileID: 1198280466}
   - {fileID: 1408805085}
-  - {fileID: 555388614}
+  - {fileID: 560579336}
   - {fileID: 291986440}
   m_Father: {fileID: 939693622}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -26454,7 +26529,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 31
   nameText: {fileID: 499620400}
   costText: {fileID: 541694352}
   ownedText: {fileID: 1874463496}
@@ -27303,7 +27378,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 50
   nameText: {fileID: 295657856}
   costText: {fileID: 1779054878}
   ownedText: {fileID: 1057938825}
@@ -27477,11 +27552,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1146034862}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 305}
-  m_Pivot: {x: 0.5, y: 0}
+  m_AnchorMin: {x: 1, y: 0.5}
+  m_AnchorMax: {x: 1, y: 0.5}
+  m_AnchoredPosition: {x: -800, y: 36.5}
+  m_SizeDelta: {x: 659, y: 305}
+  m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1198280467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28543,7 +28618,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 20
   nameText: {fileID: 903164990}
   costText: {fileID: 2012074154}
   ownedText: {fileID: 2095040349}
@@ -28987,8 +29062,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -30352,7 +30427,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 150}
+  m_SizeDelta: {x: 150, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1360069214
 MonoBehaviour:
@@ -32373,7 +32448,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 30
   nameText: {fileID: 813522965}
   costText: {fileID: 441117058}
   ownedText: {fileID: 1039749102}
@@ -33834,7 +33909,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 51
   nameText: {fileID: 1767191344}
   costText: {fileID: 1304114137}
   ownedText: {fileID: 1978396879}
@@ -34060,8 +34135,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -34287,8 +34362,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -34656,7 +34731,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 150}
+  m_SizeDelta: {x: 150, y: 80}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1536435375
 MonoBehaviour:
@@ -34924,6 +34999,8 @@ GameObject:
   - component: {fileID: 1555216633}
   - component: {fileID: 1555216634}
   - component: {fileID: 1555216635}
+  - component: {fileID: 1555216636}
+  - component: {fileID: 1555216637}
   m_Layer: 5
   m_Name: UIController
   m_TagString: Untagged
@@ -34983,6 +35060,33 @@ MonoBehaviour:
   consolePage: {fileID: 691769879}
   inventoryPage: {fileID: 1725883074}
   resourceHUD: {fileID: 639933057}
+--- !u!114 &1555216636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1555216631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fe963fa488d7488eb896875b57849d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FleetBuildPanelUI
+  rows: []
+--- !u!114 &1555216637
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1555216631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff843da6b15e2d24286da7c6418c052d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FleetPageUI
+  fleetOverviewPanel: {fileID: 1146034861}
+  fleetBuildPanel: {fileID: 1778925925}
 --- !u!1 &1560704917
 GameObject:
   m_ObjectHideFlags: 0
@@ -38035,8 +38139,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -43130,7 +43234,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 150}
+  m_SizeDelta: {x: 150, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1974666386
 MonoBehaviour:
@@ -43960,7 +44064,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 32
   nameText: {fileID: 2144408308}
   costText: {fileID: 379714464}
   ownedText: {fileID: 1229085436}
@@ -45258,7 +45362,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 150}
+  m_SizeDelta: {x: 150, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2082792664
 MonoBehaviour:
@@ -45634,7 +45738,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5160f1e7d7d8443ab854aed1f976738, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipBuildRowUI
-  shipType: 0
+  shipType: 22
   nameText: {fileID: 1026869421}
   costText: {fileID: 1158421728}
   ownedText: {fileID: 560899850}
@@ -46163,8 +46267,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -46669,9 +46773,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1555216635}
-        m_TargetAssemblyTypeName: UIController, Assembly-CSharp
-        m_MethodName: OpenFleetPage
+      - m_Target: {fileID: 1555216637}
+        m_TargetAssemblyTypeName: FleetPageUI, Assembly-CSharp
+        m_MethodName: CloseFleetBuildPanel
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

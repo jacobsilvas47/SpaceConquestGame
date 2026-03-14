@@ -1,0 +1,114 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4161131646702961295
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2785057358813119365}
+  - component: {fileID: 3756350058806106568}
+  m_Layer: 0
+  m_Name: ResourceManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2785057358813119365
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4161131646702961295}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 418.80276, y: 377.10303, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3756350058806106568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4161131646702961295}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d46047d0d3eff4edf98a07d1e90bff96, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceManager
+  gameStateHolder: {fileID: 0}
+  planetId: home
+  debugAddAmount: 50000
+  metal: 0
+  crystal: 0
+  gas: 0
+  smallCargoCostMetal: 200
+  largeCargoCostMetal: 600
+  smallCargoCapacity: 500
+  largeCargoCapacity: 2000
+  refineryCostMetal: 50
+  crystalMineCostMetal: 75
+  gasExtractorCostMetal: 100
+  probeCostMetal: 100
+  probeCostCrystal: 100
+  probeCostGas: 100
+  refineryLevelText: {fileID: 0}
+  crystalLevelText: {fileID: 0}
+  gasLevelText: {fileID: 0}
+  probeLevelText: {fileID: 0}
+  probes: 5
+  probeEfficiencyMult: 1
+  planetCollectionMult: 1
+  globalEconomyMult: 1
+  metalText: {fileID: 0}
+  crystalText: {fileID: 0}
+  gasText: {fileID: 0}
+  probesText: {fileID: 0}
+  smallCargoText: {fileID: 0}
+  largeCargoText: {fileID: 0}
+  buildSmallCargoButton: {fileID: 0}
+  buildLargeCargoButton: {fileID: 0}
+  smallCargoCostText: {fileID: 0}
+  largeCargoCostText: {fileID: 0}
+  smallCargoOwnedText: {fileID: 0}
+  largeCargoOwnedText: {fileID: 0}
+  buildRefineryButton: {fileID: 0}
+  buildCrystalMineButton: {fileID: 0}
+  buildGasExtractorButton: {fileID: 0}
+  buildProbeButton: {fileID: 0}
+  refineryCostText: {fileID: 0}
+  crystalMineCostText: {fileID: 0}
+  gasExtractorCostText: {fileID: 0}
+  probeCostText: {fileID: 0}
+  actionStatusText: {fileID: 0}
+  upgradeStatusText: {fileID: 0}
+  shipQueueText: {fileID: 0}
+  metalRateText: {fileID: 0}
+  crystalRateText: {fileID: 0}
+  gasRateText: {fileID: 0}
+  startingProbes: 5
+  bonusPerExtraProbe: 0.02
+  maxProbeMultiplier: 5
+  fleetPanel: {fileID: 0}
+  fleetButton: {fileID: 0}
+  closeFleetButton: {fileID: 0}
+  buildBasicFighterButton: {fileID: 0}
+  basicFighterOwnedText: {fileID: 0}
+  basicFighterCostText: {fileID: 0}
+  basicFighterInput: {fileID: 0}
+  smallCargoInput: {fileID: 0}
+  largeCargoInput: {fileID: 0}
+  probeInput: {fileID: 0}
+  buildAllShipsButton: {fileID: 0}
+  basicFighterCostMetal: 50
+  buildPanel: {fileID: 0}
+  buildMenuButton: {fileID: 0}
+  closeBuildButton: {fileID: 0}

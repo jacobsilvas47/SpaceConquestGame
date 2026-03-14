@@ -4,9 +4,42 @@ using UnityEngine;
 public class FleetBuildPanelUI : MonoBehaviour
 {
     [Header("Ship Rows")]
-    public List<ShipBuildRowUI> rows = new List<ShipBuildRowUI>();
+    [SerializeField] private List<ShipBuildRowUI> rows = new List<ShipBuildRowUI>();
 
     private ShipCategory currentCategory = ShipCategory.All;
+
+    [Header("Refs")]
+    [SerializeField] private ResourceManager resourceManager;
+
+    public void OnClickBuildAll()
+    {
+        if (resourceManager == null)
+        {
+            Debug.LogError("[FleetBuildPanelUI] ResourceManager is missing.");
+            return;
+        }
+
+        foreach (var row in rows)
+        {
+            if (row == null) continue;
+
+            int amount = row.GetRequestedAmount();
+            if (amount <= 0) continue;
+
+            bool success = resourceManager.TryQueueShipBuild(row.shipType, amount);
+
+            if (success)
+            {
+                row.ClearInput();
+            }
+        }
+
+        foreach (var row in rows)
+        {
+            if (row != null)
+                row.Refresh();
+        }
+    }
 
     public void ShowAll()
     {

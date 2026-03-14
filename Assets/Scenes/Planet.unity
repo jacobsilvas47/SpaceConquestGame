@@ -13842,9 +13842,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 53676861}
-        m_TargetAssemblyTypeName: ResourceManager, Assembly-CSharp
-        m_MethodName: TryBuildAllShips
+      - m_Target: {fileID: 1555216638}
+        m_TargetAssemblyTypeName: FleetBuildPanelUI, Assembly-CSharp
+        m_MethodName: OnClickBuildAll
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -34999,8 +34999,8 @@ GameObject:
   - component: {fileID: 1555216633}
   - component: {fileID: 1555216634}
   - component: {fileID: 1555216635}
-  - component: {fileID: 1555216636}
   - component: {fileID: 1555216637}
+  - component: {fileID: 1555216638}
   m_Layer: 5
   m_Name: UIController
   m_TagString: Untagged
@@ -35039,7 +35039,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8aef3cba47bb24827a2e8eb858b8773d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildMenuController
-  gameStateHolder: {fileID: 0}
+  gameStateHolder: {fileID: 794477818}
   buildList: {fileID: 686099471}
 --- !u!114 &1555216635
 MonoBehaviour:
@@ -35060,19 +35060,6 @@ MonoBehaviour:
   consolePage: {fileID: 691769879}
   inventoryPage: {fileID: 1725883074}
   resourceHUD: {fileID: 639933057}
---- !u!114 &1555216636
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1555216631}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9fe963fa488d7488eb896875b57849d8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FleetBuildPanelUI
-  rows: []
 --- !u!114 &1555216637
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35087,6 +35074,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FleetPageUI
   fleetOverviewPanel: {fileID: 1146034861}
   fleetBuildPanel: {fileID: 1778925925}
+--- !u!114 &1555216638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1555216631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fe963fa488d7488eb896875b57849d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FleetBuildPanelUI
+  rows:
+  - {fileID: 157074343}
+  - {fileID: 934291689}
+  - {fileID: 526206356}
+  - {fileID: 522556326}
+  - {fileID: 1271407156}
+  - {fileID: 744621660}
+  - {fileID: 2096957426}
+  - {fileID: 1416424591}
+  - {fileID: 1156177056}
+  - {fileID: 2017284100}
+  - {fileID: 870412122}
+  - {fileID: 1070892052}
+  - {fileID: 217382473}
+  - {fileID: 1181753526}
+  - {fileID: 1476778975}
+  - {fileID: 1021823956}
+  - {fileID: 1062337935}
+  resourceManager: {fileID: 53676861}
 --- !u!1 &1560704917
 GameObject:
   m_ObjectHideFlags: 0
@@ -39343,6 +39361,7 @@ MonoBehaviour:
   - {fileID: 1476778975}
   - {fileID: 1021823956}
   - {fileID: 1062337935}
+  resourceManager: {fileID: 53676861}
 --- !u!1 &1779054875
 GameObject:
   m_ObjectHideFlags: 0

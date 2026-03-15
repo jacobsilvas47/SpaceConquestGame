@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 [Serializable]
 public class ShipData
@@ -17,6 +18,8 @@ public class ShipData
     public int crystalCost;
     public int gasCost;
 
+    public List<Requirement> requirements = new List<Requirement>();
+
     public ShipData(
         string displayName,
         int maxHp,
@@ -27,7 +30,8 @@ public class ShipData
         int buildTimeSeconds,
         int metalCost,
         int crystalCost,
-        int gasCost)
+        int gasCost,
+        List<Requirement> requirements = null)
     {
         this.displayName = displayName;
         this.maxHp = maxHp;
@@ -39,5 +43,6 @@ public class ShipData
         this.metalCost = metalCost;
         this.crystalCost = crystalCost;
         this.gasCost = gasCost;
+        this.requirements = requirements ?? new List<Requirement>();
     }
 }

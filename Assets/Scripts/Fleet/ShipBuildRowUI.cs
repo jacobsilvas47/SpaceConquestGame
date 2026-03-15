@@ -33,7 +33,14 @@ public class ShipBuildRowUI : MonoBehaviour
         if (ship == null) return;
 
         if (nameText) nameText.text = ship.displayName;
-        if (costText) costText.text = $"Cost: {ship.metalCost} M, {ship.crystalCost} C, {ship.gasCost} G";
+
+        if (costText)
+        {
+            costText.text =
+                $"Cost: {NumberFormatter.Format(ship.metalCost)} M, " +
+                $"{NumberFormatter.Format(ship.crystalCost)} C, " +
+                $"{NumberFormatter.Format(ship.gasCost)} G";
+        }
 
         int owned = 0;
         if (gameStateHolder != null && gameStateHolder.state != null)
@@ -41,7 +48,8 @@ public class ShipBuildRowUI : MonoBehaviour
             owned = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
         }
 
-        if (ownedText) ownedText.text = $"Owned: {owned}";
+        if (ownedText)
+            ownedText.text = $"Owned: {NumberFormatter.Format(owned)}";
     }
 
     private void OnBuildClicked()

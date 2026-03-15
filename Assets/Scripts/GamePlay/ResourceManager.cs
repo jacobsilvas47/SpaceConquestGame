@@ -3,18 +3,18 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
-    public class ResourceManager : MonoBehaviour
+public class ResourceManager : MonoBehaviour
+{
+    public GameStateHolder gameStateHolder;
+    public string planetId = "home";
+
+    private PlanetState GetPlanet()
     {
-        public GameStateHolder gameStateHolder;
-        public string planetId = "home";
+        if (gameStateHolder == null || gameStateHolder.state == null) return null;
+        return gameStateHolder.state.GetPlanet(planetId);
+    }
 
-        private PlanetState GetPlanet()
-        {
-            if (gameStateHolder == null || gameStateHolder.state == null) return null;
-            return gameStateHolder.state.GetPlanet(planetId);
-        }
-
-        private int GetTotalProbesFromGameState()
+    private int GetTotalProbesFromGameState()
     {
         if (gameStateHolder == null || gameStateHolder.state == null)
             return probes; // fallback safety
@@ -27,30 +27,17 @@ using UnityEngine.UI;
         return stationed + busy;
     }
 
-    private double MetalFloor()   => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().metal);
+    private double MetalFloor() => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().metal);
     private double CrystalFloor() => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().crystal);
-    private double GasFloor()     => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().gas);
+    private double GasFloor() => GetPlanet() == null ? 0 : System.Math.Floor(GetPlanet().gas);
 
-    // Debug Headers
     [Header("DEBUG CHEATS (Editor Only)")]
     public double debugAddAmount = 50000;
 
-    // Headers
     [Header("Current Resources (Debug Mirror of Planet, do not spend from these)")]
     [SerializeField] private double metal;
     [SerializeField] private double crystal;
     [SerializeField] private double gas;
-
-    /*
-    [Header("Ships")]
-    public int smallCargo = 0;
-    public int largeCargo = 0;
-
-    [Header("Ships Busy (on missions)")]
-    public int probesBusy = 0;
-    public int smallCargoBusy = 0;
-    public int largeCargoBusy = 0;
-    */
 
     [Header("Ship Costs (metal only, for now)")]
     public int smallCargoCostMetal = 200;
@@ -60,15 +47,15 @@ using UnityEngine.UI;
     public int smallCargoCapacity = 500;
     public int largeCargoCapacity = 2000;
 
-    [Header("Costs")] // Build Costs
-    public int refineryCostMetal = 50; // Metal
-    public int crystalMineCostMetal = 75; // Crystal
-    public int gasExtractorCostMetal = 100; // Gas
-    public int probeCostMetal = 100; // Probes
+    [Header("Costs")]
+    public int refineryCostMetal = 50;
+    public int crystalMineCostMetal = 75;
+    public int gasExtractorCostMetal = 100;
+    public int probeCostMetal = 100;
     public int probeCostCrystal = 100;
     public int probeCostGas = 100;
 
-    [Header("Level")] // Build Costs
+    [Header("Level")]
     [SerializeField] private TextMeshProUGUI refineryLevelText;
     [SerializeField] private TextMeshProUGUI crystalLevelText;
     [SerializeField] private TextMeshProUGUI gasLevelText;
@@ -114,9 +101,9 @@ using UnityEngine.UI;
     public TextMeshProUGUI probeCostText;
 
     [Header("Status UI")]
-    public TextMeshProUGUI actionStatusText;   // success / error messages
-    public TextMeshProUGUI upgradeStatusText;  // building timer
-    public TextMeshProUGUI shipQueueText;      // fleet queue timer
+    public TextMeshProUGUI actionStatusText;
+    public TextMeshProUGUI upgradeStatusText;
+    public TextMeshProUGUI shipQueueText;
 
     [Header("Income UI Text (optional)")]
     public TextMeshProUGUI metalRateText;
@@ -124,16 +111,16 @@ using UnityEngine.UI;
     public TextMeshProUGUI gasRateText;
 
     [Header("Probe Multiplier Tuning")]
-    public int startingProbes = 5;          // your default starting probes
-    public double bonusPerExtraProbe = 0.02; // 2% per probe after startingProbes
-    public double maxProbeMultiplier = 5.0;  // optional cap, keeps things sane
+    public int startingProbes = 5;
+    public double bonusPerExtraProbe = 0.02;
+    public double maxProbeMultiplier = 5.0;
 
-   [Header("Fleet UI")]
+    [Header("Fleet UI")]
     public GameObject fleetPanel;
     public UnityEngine.UI.Button fleetButton;
     public UnityEngine.UI.Button closeFleetButton;
 
-    public UnityEngine.UI.Button buildBasicFighterButton;   
+    public UnityEngine.UI.Button buildBasicFighterButton;
 
     public TMPro.TextMeshProUGUI basicFighterOwnedText;
     public TMPro.TextMeshProUGUI basicFighterCostText;
@@ -143,7 +130,7 @@ using UnityEngine.UI;
     public TMP_InputField smallCargoInput;
     public TMP_InputField largeCargoInput;
     public TMP_InputField probeInput;
-    
+
     [Header("Fleet Batch Build UI")]
     public Button buildAllShipsButton;
 
@@ -155,22 +142,21 @@ using UnityEngine.UI;
 
     [Header("Menu Buttons")]
     public Button buildMenuButton;
-    public Button closeBuildButton; 
+    public Button closeBuildButton;
 
     void Start()
     {
-        // Start with clean screen
         if (gameStateHolder == null)
-    {
-        gameStateHolder = FindFirstObjectByType<GameStateHolder>();
-    }
+        {
+            gameStateHolder = FindFirstObjectByType<GameStateHolder>();
+        }
 
         UpdateUI();
         RefreshBasicFighterRow();
         RefreshCargoRows();
     }
 
-        void Update()
+    void Update()
     {
         double metalPerSec = GetMetalPerSecond();
         double crystalPerSec = GetCrystalPerSecond();
@@ -182,7 +168,6 @@ using UnityEngine.UI;
 
         if (p != null)
         {
-            // Tick timed systems first
             BuildingUpgradeSystem.TickPlanet(p);
             TickShipQueue(p);
 
@@ -190,7 +175,6 @@ using UnityEngine.UI;
             p.crystal += crystalPerSec * Time.deltaTime;
             p.gas += gasPerSec * Time.deltaTime;
 
-            // Mirror into inspector (debug)
             metal = p.metal;
             crystal = p.crystal;
             gas = p.gas;
@@ -206,7 +190,7 @@ using UnityEngine.UI;
 
         int stationed = GameStateQueries.GetStationedShips(state, planetId, ShipType.Probe);
         int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
-        return Mathf.Max(0, stationed); // "available" = stationed (busy are not stationed)
+        return Mathf.Max(0, stationed);
     }
 
     public int SmallCargoAvailable()
@@ -229,7 +213,7 @@ using UnityEngine.UI;
         return Mathf.Max(0, stationed);
     }
 
-        void UpdateUI()
+    void UpdateUI()
     {
         double metalPerSec = GetMetalPerSecond();
         double crystalPerSec = GetCrystalPerSecond();
@@ -267,8 +251,8 @@ using UnityEngine.UI;
             if (largeCargoText) largeCargoText.text = $"Large Cargo: {lcStationed} (busy {lcBusy})";
         }
 
-        if (smallCargoCostText) smallCargoCostText.text = $"Cost: {smallCargoCostMetal} Metal";
-        if (largeCargoCostText) largeCargoCostText.text = $"Cost: {largeCargoCostMetal} Metal";
+        if (smallCargoCostText) smallCargoCostText.text = $"Cost: {NumberFormatter.Format(smallCargoCostMetal)} Metal";
+        if (largeCargoCostText) largeCargoCostText.text = $"Cost: {NumberFormatter.Format(largeCargoCostMetal)} Metal";
 
         if (buildSmallCargoButton)
             buildSmallCargoButton.interactable = MetalFloor() >= smallCargoCostMetal;
@@ -280,9 +264,6 @@ using UnityEngine.UI;
         if (crystalRateText) crystalRateText.text = $"Crystal/s: {crystalPerSec:0.##}";
         if (gasRateText) gasRateText.text = $"Gas/s: {gasPerSec:0.##}";
 
-        // ----------------------------
-        // Building scaled costs + times
-        // ----------------------------
         int refineryLevel = (p != null) ? p.metalRefineryLevel : 0;
         int crystalLevel = (p != null) ? p.crystalMineLevel : 0;
         int gasLevel = (p != null) ? p.gasExtractorLevel : 0;
@@ -330,7 +311,12 @@ using UnityEngine.UI;
         }
 
         if (probeCostText)
-            probeCostText.text = $"Cost: {probeCostMetal}M/{probeCostCrystal}C/{probeCostGas}G";
+        {
+            probeCostText.text =
+                $"Cost: {NumberFormatter.Format(probeCostMetal)}M/" +
+                $"{NumberFormatter.Format(probeCostCrystal)}C/" +
+                $"{NumberFormatter.Format(probeCostGas)}G";
+        }
 
         if (refineryLevelText)
             refineryLevelText.text = $"Level {refineryLevel} → {refineryLevel + 1}";
@@ -347,9 +333,6 @@ using UnityEngine.UI;
             probeLevelText.text = $"Level {totalProbes}";
         }
 
-        // -----------------------------------
-        // Building button interactable states
-        // -----------------------------------
         bool canAffordRefinery =
             p != null &&
             p.metal >= refineryMetalCost &&
@@ -387,40 +370,36 @@ using UnityEngine.UI;
                 GasFloor() >= probeCostGas;
         }
 
-        // -----------------------
-        // Active upgrade status UI
-        // -----------------------
         if (upgradeStatusText)
-    {
-        bool showUpgradeText = false;
-
-        if (p != null && p.activeBuildingUpgrade != null)
         {
-            double remaining = BuildingUpgradeSystem.GetRemainingTime(p);
+            bool showUpgradeText = false;
 
-            if (remaining > 0)
+            if (p != null && p.activeBuildingUpgrade != null)
             {
-                showUpgradeText = true;
-                upgradeStatusText.gameObject.SetActive(true);
-                upgradeStatusText.color = Color.yellow;
-                upgradeStatusText.text =
-                    $"Upgrading {GetBuildingDisplayName(p.activeBuildingUpgrade.buildingType)}\n" +
-                    $"Remaining: {TimeFormatUtility.FormatDuration(remaining)}";
+                double remaining = BuildingUpgradeSystem.GetRemainingTime(p);
+
+                if (remaining > 0)
+                {
+                    showUpgradeText = true;
+                    upgradeStatusText.gameObject.SetActive(true);
+                    upgradeStatusText.color = Color.yellow;
+                    upgradeStatusText.text =
+                        $"Upgrading {GetBuildingDisplayName(p.activeBuildingUpgrade.buildingType)}\n" +
+                        $"Remaining: {TimeFormatUtility.FormatDuration(remaining)}";
+                }
+            }
+
+            if (!showUpgradeText)
+            {
+                upgradeStatusText.text = "";
+                upgradeStatusText.gameObject.SetActive(false);
             }
         }
-
-        if (!showUpgradeText)
-        {
-            upgradeStatusText.text = "";
-            upgradeStatusText.gameObject.SetActive(false);
-        }
-    }
 
         RefreshBasicFighterRow();
         RefreshCargoRows();
     }
 
-    // Building Methods
     public void TryBuildRefinery()
     {
         var p = GetPlanet();
@@ -496,10 +475,7 @@ using UnityEngine.UI;
         UpdateUI();
     }
 
-    // Fleet
-
-        // Reset Inputs
-        private void ResetInput(TMP_InputField inputField)
+    private void ResetInput(TMP_InputField inputField)
     {
         if (inputField != null)
             inputField.text = "1";
@@ -512,16 +488,16 @@ using UnityEngine.UI;
         if (largeCargoInput) largeCargoInput.text = "";
         if (probeInput) probeInput.text = "";
     }
-    
+
     public void OpenFleet()
     {
         CloseAllMenus();
         if (fleetPanel) fleetPanel.SetActive(true);
     }
 
-    public void CloseFleet()     => CloseAllMenus();
+    public void CloseFleet() => CloseAllMenus();
 
-        private int ReadBuildAmount(TMP_InputField inputField)
+    private int ReadBuildAmount(TMP_InputField inputField)
     {
         if (inputField == null)
             return 1;
@@ -549,7 +525,65 @@ using UnityEngine.UI;
         return Mathf.Max(0, amount);
     }
 
-       public bool TryBuildShip(ShipType shipType, int amount, out string error)
+    private bool MeetsShipRequirements(ShipType shipType, out string error)
+    {
+        error = null;
+
+        if (gameStateHolder == null || gameStateHolder.state == null)
+        {
+            error = "Game state missing.";
+            return false;
+        }
+
+        var ship = ShipDatabase.Get(shipType);
+        if (ship == null)
+        {
+            error = $"No ship data found for {shipType}.";
+            return false;
+        }
+
+        if (!RequirementUtility.MeetsRequirements(gameStateHolder.state, planetId, ship.requirements))
+        {
+            error = GetRequirementText(ship);
+            return false;
+        }
+
+        return true;
+    }
+
+    private string GetRequirementText(ShipData ship)
+    {
+        if (ship == null || ship.requirements == null || ship.requirements.Count == 0)
+            return "Requirements not met.";
+
+        var parts = new System.Collections.Generic.List<string>();
+
+        foreach (var req in ship.requirements)
+        {
+            parts.Add($"{GetRequirementDisplayName(req.type)} Level {req.level}");
+        }
+
+        return "Requires: " + string.Join(", ", parts);
+    }
+
+    private string GetRequirementDisplayName(RequirementType type)
+    {
+        switch (type)
+        {
+            case RequirementType.OrbitalShipworks: return "Orbital Shipworks";
+            case RequirementType.MetalRefinery: return "Metal Refinery";
+            case RequirementType.CrystalMine: return "Crystal Mine";
+            case RequirementType.GasExtractor: return "Gas Extractor";
+            case RequirementType.Barracks: return "Barracks";
+            case RequirementType.ResearchLab: return "Research Lab";
+            case RequirementType.LaserTech: return "Laser Tech";
+            case RequirementType.ArmorTech: return "Armor Tech";
+            case RequirementType.EngineTech: return "Engine Tech";
+            default: return type.ToString();
+        }
+    }
+
+    public bool TryBuildShip(ShipType shipType, int amount, out string error)
     {
         error = null;
 
@@ -562,6 +596,12 @@ using UnityEngine.UI;
         if (amount <= 0)
         {
             error = "Enter an amount greater than 0.";
+            return false;
+        }
+
+        if (!MeetsShipRequirements(shipType, out error))
+        {
+            UpdateUI();
             return false;
         }
 
@@ -578,10 +618,21 @@ using UnityEngine.UI;
         return true;
     }
 
-            public void TryBuildBasicFighter()
+    public void TryBuildBasicFighter()
     {
         var p = GetPlanet();
         if (p == null) return;
+
+        if (!MeetsShipRequirements(ShipType.BasicFighter, out string requirementError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = requirementError;
+        }
+        return;
+    }
 
         int amount = ReadBuildAmount(basicFighterInput);
         int totalMetalCost = basicFighterCostMetal * amount;
@@ -613,10 +664,21 @@ using UnityEngine.UI;
         RefreshBasicFighterRow();
     }
 
-        public void TryBuildSmallCargo()
+    public void TryBuildSmallCargo()
     {
         var p = GetPlanet();
         if (p == null) return;
+
+        if (!MeetsShipRequirements(ShipType.SmallCargo, out string requirementError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = requirementError;
+        }
+        return;
+    }
 
         int amount = ReadBuildAmount(smallCargoInput);
         int totalMetalCost = smallCargoCostMetal * amount;
@@ -647,10 +709,21 @@ using UnityEngine.UI;
         RefreshCargoRows();
     }
 
-        public void TryBuildLargeCargo()
+    public void TryBuildLargeCargo()
     {
         var p = GetPlanet();
         if (p == null) return;
+
+        if (!MeetsShipRequirements(ShipType.LargeCargo, out string requirementError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = requirementError;
+        }
+        return;
+    }
 
         int amount = ReadBuildAmount(largeCargoInput);
         int totalMetalCost = largeCargoCostMetal * amount;
@@ -684,7 +757,7 @@ using UnityEngine.UI;
     void RefreshBasicFighterRow()
     {
         if (basicFighterCostText)
-            basicFighterCostText.text = $"Cost: {basicFighterCostMetal} Metal";
+            basicFighterCostText.text = $"Cost: {NumberFormatter.Format(basicFighterCostMetal)} Metal";
 
         if (gameStateHolder != null && gameStateHolder.state != null)
         {
@@ -705,6 +778,17 @@ using UnityEngine.UI;
     {
         var p = GetPlanet();
         if (p == null) return;
+
+        if (!MeetsShipRequirements(ShipType.Probe, out string requirementError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = requirementError;
+        }
+        return;
+    }
 
         int amount = ReadBuildAmount(probeInput);
 
@@ -765,6 +849,50 @@ using UnityEngine.UI;
             return;
         }
 
+        if (basicFighters > 0 && !MeetsShipRequirements(ShipType.BasicFighter, out string bfError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = bfError;
+        }
+        return;
+    }
+
+    if (smallCargos > 0 && !MeetsShipRequirements(ShipType.SmallCargo, out string scError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = scError;
+        }
+        return;
+    }
+
+    if (largeCargos > 0 && !MeetsShipRequirements(ShipType.LargeCargo, out string lcError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = lcError;
+        }
+        return;
+    }
+
+    if (probes > 0 && !MeetsShipRequirements(ShipType.Probe, out string probeError))
+    {
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
+            actionStatusText.color = Color.red;
+            actionStatusText.text = probeError;
+        }
+        return;
+    }
+
         int totalMetalCost =
             (basicFighters * basicFighterCostMetal) +
             (smallCargos * smallCargoCostMetal) +
@@ -786,7 +914,9 @@ using UnityEngine.UI;
                 actionStatusText.gameObject.SetActive(true);
                 actionStatusText.color = Color.red;
                 actionStatusText.text =
-                    $"Not enough resources\nNeed {totalMetalCost}M / {totalCrystalCost}C / {totalGasCost}G";
+                    $"Not enough resources\nNeed {NumberFormatter.Format(totalMetalCost)}M / " +
+                    $"{NumberFormatter.Format(totalCrystalCost)}C / " +
+                    $"{NumberFormatter.Format(totalGasCost)}G";
             }
             return;
         }
@@ -812,15 +942,17 @@ using UnityEngine.UI;
             actionStatusText.gameObject.SetActive(true);
             actionStatusText.color = Color.green;
             actionStatusText.text =
-                $"Queued {totalRequested} ship(s)\n" +
-                $"Spent {totalMetalCost}M / {totalCrystalCost}C / {totalGasCost}G";
+                $"Queued {NumberFormatter.Format(totalRequested)} ship(s)\n" +
+                $"Spent {NumberFormatter.Format(totalMetalCost)}M / " +
+                $"{NumberFormatter.Format(totalCrystalCost)}C / " +
+                $"{NumberFormatter.Format(totalGasCost)}G";
         }
 
         ResetBatchInputs();
         UpdateUI();
         RefreshBasicFighterRow();
         RefreshCargoRows();
-    } 
+    }
 
     public bool TryQueueShipBuild(ShipType shipType, int amount)
     {
@@ -833,6 +965,21 @@ using UnityEngine.UI;
         if (amount <= 0)
         {
             Debug.LogWarning("[ResourceManager] Amount must be greater than 0.");
+            return false;
+        }
+
+        if (!MeetsShipRequirements(shipType, out string requirementError))
+        {
+            Debug.LogWarning($"[ResourceManager] Cannot build {shipType}: {requirementError}");
+
+            if (actionStatusText)
+            {
+                actionStatusText.gameObject.SetActive(true);
+                actionStatusText.color = Color.red;
+                actionStatusText.text = requirementError;
+            }
+
+            UpdateUI();
             return false;
         }
 
@@ -849,7 +996,7 @@ using UnityEngine.UI;
         Debug.Log($"[ResourceManager] Queued {amount} {shipType}(s).");
         UpdateUI();
         return true;
-    }                                  
+    }
 
     void RefreshCargoRows()
     {
@@ -877,7 +1024,7 @@ using UnityEngine.UI;
 
     public void CloseBuild() => CloseAllMenus();
 
-        double GetMetalPerSecond()
+    double GetMetalPerSecond()
     {
         var p = GetPlanet();
         if (p == null) return 0;
@@ -935,7 +1082,6 @@ using UnityEngine.UI;
         return stationed + busy;
     }
 
-    // Display Name for Upgrading Buildings
     private string GetBuildingDisplayName(BuildingType type)
     {
         switch (type)
@@ -943,19 +1089,19 @@ using UnityEngine.UI;
             case BuildingType.MetalRefinery: return "Metal Refinery";
             case BuildingType.CrystalMine: return "Crystal Mine";
             case BuildingType.GasExtractor: return "Gas Extractor";
+            case BuildingType.OrbitalShipworks: return "Orbital Shipworks";
             default: return type.ToString();
         }
     }
 
-    // FORCE SHIP BUTTON
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
     public void Debug_ForceFoundShipsNextExpedition()
     {
         ExpeditionResolver.Debug_ForceFoundShipsNext();
     }
-    #endif
+#endif
 
-        double GetProbeCountMultiplier()
+    double GetProbeCountMultiplier()
     {
         int totalProbes = GetTotalProbesFromGameState();
 
@@ -1027,19 +1173,16 @@ using UnityEngine.UI;
         }
     }
 
-    // Cheat Button
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
     public void DebugAddResources()
     {
         var p = GetPlanet();
         if (p == null) return;
 
-        // +50k resources (or whatever debugAddAmount is)
         p.metal += debugAddAmount;
         p.crystal += debugAddAmount;
         p.gas += debugAddAmount;
 
-        // +100 ships each
         p.AddStationed(ShipType.Probe, 100);
         p.AddStationed(ShipType.SmallCargo, 100);
         p.AddStationed(ShipType.LargeCargo, 100);
@@ -1054,6 +1197,5 @@ using UnityEngine.UI;
 
         UpdateUI();
     }
-    #endif
-
+#endif
 }

@@ -4,7 +4,8 @@ public enum BuildingType
 {
     MetalRefinery,
     CrystalMine,
-    GasExtractor
+    GasExtractor,
+    OrbitalShipworks
 }
 
 public static class BuildingBalance
@@ -44,6 +45,17 @@ public static class BuildingBalance
                     costMultiplier = 1.6f,
                     baseBuildTimeSeconds = 14,
                     timeMultiplier = 1.35f
+                };
+
+            case BuildingType.OrbitalShipworks:
+                return new BuildingUpgradeFormula
+                {
+                    baseMetal = 400,
+                    baseCrystal = 200,
+                    baseGas = 100,
+                    costMultiplier = 1.7f,
+                    baseBuildTimeSeconds = 20,
+                    timeMultiplier = 1.4f
                 };
         }
 

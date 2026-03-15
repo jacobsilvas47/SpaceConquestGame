@@ -18,12 +18,13 @@ using System.Collections.Generic;
     public double metal;
     public double crystal;
     public double gas;
-    
+   
 
     // Building levels
     public int metalRefineryLevel = 0;
     public int crystalMineLevel = 0;
     public int gasExtractorLevel = 0;
+    public int orbitalShipworksLevel;
 
     // ships stationed on the planet (not traveling)
     public Dictionary<ShipType, int> stationedShips = new Dictionary<ShipType, int>();
@@ -63,5 +64,25 @@ using System.Collections.Generic;
         if (stationedShips[type] <= 0) stationedShips.Remove(type);
 
         return true;
+    }
+
+    public int GetBuildingLevel(BuildingType type)
+    {
+        switch (type)
+        {
+            case BuildingType.MetalRefinery:
+                return metalRefineryLevel;
+
+            case BuildingType.CrystalMine:
+                return crystalMineLevel;
+
+            case BuildingType.GasExtractor:
+                return gasExtractorLevel;
+
+            case BuildingType.OrbitalShipworks:
+                return orbitalShipworksLevel;
+        }
+
+        return 0;
     }
 }

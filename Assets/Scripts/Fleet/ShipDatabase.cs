@@ -17,7 +17,11 @@ public static class ShipDatabase
                 10,
                 300,
                 150,
-                50
+                50,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 }
+                }
             )
         },
         {
@@ -32,7 +36,11 @@ public static class ShipDatabase
                 45,
                 2000,
                 1000,
-                500
+                500,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 }
+                }
             )
         },
         {
@@ -47,7 +55,11 @@ public static class ShipDatabase
                 90,
                 6000,
                 3500,
-                1200
+                1200,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                }
             )
         },
         {
@@ -62,7 +74,11 @@ public static class ShipDatabase
                 180,
                 18000,
                 12000,
-                5000
+                5000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 }
+                }
             )
         },
         {
@@ -77,7 +93,11 @@ public static class ShipDatabase
                 35,
                 2500,
                 1200,
-                400
+                400,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 }
+                }
             )
         },
         {
@@ -92,7 +112,11 @@ public static class ShipDatabase
                 50,
                 4000,
                 2200,
-                900
+                900,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                }
             )
         },
         {
@@ -107,7 +131,11 @@ public static class ShipDatabase
                 75,
                 7000,
                 3500,
-                1500
+                1500,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 }
+                }
             )
         },
         {
@@ -122,7 +150,11 @@ public static class ShipDatabase
                 100,
                 10000,
                 6000,
-                2500
+                2500,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 }
+                }
             )
         },
         {
@@ -137,7 +169,11 @@ public static class ShipDatabase
                 180,
                 22000,
                 14000,
-                7000
+                7000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 }
+                }
             )
         },
         {
@@ -152,7 +188,11 @@ public static class ShipDatabase
                 240,
                 32000,
                 21000,
-                11000
+                11000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 5 }
+                }
             )
         },
         {
@@ -167,7 +207,11 @@ public static class ShipDatabase
                 360,
                 55000,
                 40000,
-                22000
+                22000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 5 }
+                }
             )
         },
         {
@@ -182,7 +226,11 @@ public static class ShipDatabase
                 480,
                 85000,
                 65000,
-                35000
+                35000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 6 }
+                }
             )
         },
         {
@@ -197,7 +245,11 @@ public static class ShipDatabase
                 720,
                 150000,
                 110000,
-                70000
+                70000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 7 }
+                }
             )
         },
         {
@@ -212,7 +264,11 @@ public static class ShipDatabase
                 300,
                 18000,
                 12000,
-                8000
+                8000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                }
             )
         },
         {
@@ -227,7 +283,11 @@ public static class ShipDatabase
                 150,
                 9000,
                 5000,
-                2500
+                2500,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                }
             )
         },
         {
@@ -242,7 +302,11 @@ public static class ShipDatabase
                 260,
                 30000,
                 26000,
-                12000
+                12000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 }
+                }
             )
         },
         {
@@ -257,7 +321,11 @@ public static class ShipDatabase
                 320,
                 42000,
                 30000,
-                18000
+                18000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 }
+                }
             )
         }
     };

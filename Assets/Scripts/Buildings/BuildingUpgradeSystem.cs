@@ -89,6 +89,7 @@ public static class BuildingUpgradeSystem
             case BuildingType.MetalRefinery: return planet.metalRefineryLevel;
             case BuildingType.CrystalMine: return planet.crystalMineLevel;
             case BuildingType.GasExtractor: return planet.gasExtractorLevel;
+            case BuildingType.OrbitalShipworks: return planet.orbitalShipworksLevel;
             default: return 0;
         }
     }
@@ -105,6 +106,9 @@ public static class BuildingUpgradeSystem
                 break;
             case BuildingType.GasExtractor:
                 planet.gasExtractorLevel = level;
+                break;
+            case BuildingType.OrbitalShipworks:
+                planet.orbitalShipworksLevel = level;
                 break;
         }
     }

@@ -73,6 +73,8 @@ public class ResourceManager : MonoBehaviour
     public TextMeshProUGUI metalText;
     public TextMeshProUGUI crystalText;
     public TextMeshProUGUI gasText;
+    public TextMeshProUGUI orbitalShipworksLevelText;
+    public TextMeshProUGUI orbitalShipworksCostText;
 
     [Header("Ship UI Text")]
     public TextMeshProUGUI probesText;
@@ -94,6 +96,7 @@ public class ResourceManager : MonoBehaviour
     public Button buildCrystalMineButton;
     public Button buildGasExtractorButton;
     public Button buildProbeButton;
+    public Button buildOrbitalShipworksButton;
 
     public TextMeshProUGUI refineryCostText;
     public TextMeshProUGUI crystalMineCostText;
@@ -236,7 +239,7 @@ public class ResourceManager : MonoBehaviour
             int busy = GameStateQueries.GetBusyShips(state, ShipType.Probe);
             int total = stationed + busy;
 
-            probesText.text = $"Probes: {stationed}/{total} (busy {busy}) ({probeCountMult:0.##}x)";
+            probesText.text = $"Probes: {stationed}/{total}";
         }
 
         if (state != null)
@@ -267,6 +270,7 @@ public class ResourceManager : MonoBehaviour
         int refineryLevel = (p != null) ? p.metalRefineryLevel : 0;
         int crystalLevel = (p != null) ? p.crystalMineLevel : 0;
         int gasLevel = (p != null) ? p.gasExtractorLevel : 0;
+        int orbitalShipworksLevel = (p != null) ? p.orbitalShipworksLevel : 0;
 
         double refineryMetalCost = BuildingBalance.GetMetalCost(BuildingType.MetalRefinery, refineryLevel);
         double refineryCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.MetalRefinery, refineryLevel);
@@ -282,6 +286,11 @@ public class ResourceManager : MonoBehaviour
         double gasExtractorCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.GasExtractor, gasLevel);
         double gasExtractorGasCost = BuildingBalance.GetGasCost(BuildingType.GasExtractor, gasLevel);
         double gasExtractorBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.GasExtractor, gasLevel);
+
+        double orbitalShipworksMetalCost = BuildingBalance.GetMetalCost(BuildingType.OrbitalShipworks, orbitalShipworksLevel);
+        double orbitalShipworksCrystalCost = BuildingBalance.GetCrystalCost(BuildingType.OrbitalShipworks, orbitalShipworksLevel);
+        double orbitalShipworksGasCost = BuildingBalance.GetGasCost(BuildingType.OrbitalShipworks, orbitalShipworksLevel);
+        double orbitalShipworksBuildTime = BuildingBalance.GetBuildTimeSeconds(BuildingType.OrbitalShipworks, orbitalShipworksLevel);
 
         if (refineryCostText)
         {
@@ -310,6 +319,15 @@ public class ResourceManager : MonoBehaviour
                 $"Time: {TimeFormatUtility.FormatDuration(gasExtractorBuildTime)}";
         }
 
+        if (orbitalShipworksCostText)
+        {
+            orbitalShipworksCostText.text =
+                $"Cost: {NumberFormatter.Format(orbitalShipworksMetalCost)}M / " +
+                $"{NumberFormatter.Format(orbitalShipworksCrystalCost)}C / " +
+                $"{NumberFormatter.Format(orbitalShipworksGasCost)}G\n" +
+                $"Time: {TimeFormatUtility.FormatDuration(orbitalShipworksBuildTime)}";
+        }
+
         if (probeCostText)
         {
             probeCostText.text =
@@ -326,6 +344,9 @@ public class ResourceManager : MonoBehaviour
 
         if (gasLevelText)
             gasLevelText.text = $"Level {gasLevel} → {gasLevel + 1}";
+
+        if (orbitalShipworksLevelText)
+            orbitalShipworksLevelText.text = $"Level {orbitalShipworksLevel} → {orbitalShipworksLevel + 1}";
 
         if (probeLevelText)
         {
@@ -351,6 +372,12 @@ public class ResourceManager : MonoBehaviour
             p.crystal >= gasExtractorCrystalCost &&
             p.gas >= gasExtractorGasCost;
 
+        bool canAffordOrbitalShipworks =
+            p != null &&
+            p.metal >= orbitalShipworksMetalCost &&
+            p.crystal >= orbitalShipworksCrystalCost &&
+            p.gas >= orbitalShipworksGasCost;
+
         bool buildingBusy = p != null && p.activeBuildingUpgrade != null;
 
         if (buildRefineryButton)
@@ -361,6 +388,9 @@ public class ResourceManager : MonoBehaviour
 
         if (buildGasExtractorButton)
             buildGasExtractorButton.interactable = canAffordGasExtractor && !buildingBusy;
+
+        if (buildOrbitalShipworksButton)
+            buildOrbitalShipworksButton.interactable = canAffordOrbitalShipworks && !buildingBusy;
 
         if (buildProbeButton)
         {
@@ -461,6 +491,31 @@ public class ResourceManager : MonoBehaviour
             {
                 actionStatusText.color = Color.green;
                 actionStatusText.text = "Gas Extractor upgrade started";
+            }
+        }
+        else
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.color = Color.red;
+                actionStatusText.text = error;
+            }
+        }
+
+        UpdateUI();
+    }
+
+    public void TryBuildOrbitalShipworks()
+    {
+        var p = GetPlanet();
+        if (p == null) return;
+
+        if (BuildingUpgradeSystem.TryStartUpgrade(gameStateHolder.state, planetId, BuildingType.OrbitalShipworks, out string error))
+        {
+            if (actionStatusText)
+            {
+                actionStatusText.color = Color.green;
+                actionStatusText.text = "Orbital Shipworks upgrade started";
             }
         }
         else

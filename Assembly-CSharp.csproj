@@ -59,12 +59,14 @@
     <Compile Include="Assets/Scripts/Inventory/Data/ItemDatabase.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextSelector_A.cs" />
     <Compile Include="Assets/Scripts/Systems/FleetFactory.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseDatabase.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryState.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetPageUI.cs" />
     <Compile Include="Assets/Scripts/UI/UIPageController.cs" />
     <Compile Include="Assets/Scripts/Requirements/RequirementUtility.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark02.cs" />
     <Compile Include="Assets/Scripts/UI/ConsolePageUI.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseBuildPanelUI.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipCategory.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetCombatCalculator.cs" />
     <Compile Include="Assets/Scripts/Inventory/UI/InventoryPanelUI.cs" />
@@ -93,6 +95,7 @@
     <Compile Include="Assets/Scripts/UI/NumberFormatter.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipCategoryDatabase.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipType.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseData.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryManager.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextInfoDebugTool.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetBuildPanelUI.cs" />
@@ -104,6 +107,7 @@
     <Compile Include="Assets/Scripts/Systems/FleetReturner.cs" />
     <Compile Include="Assets/Scripts/UI/ConsoleLogRowUI.cs" />
     <Compile Include="Assets/Scripts/Utilities/TimeFormatUtility.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseType.cs" />
     <Compile Include="Assets/Scripts/Core/MissionType.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark01_UGUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/SimpleScript.cs" />
@@ -124,6 +128,7 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/CameraController.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark03.cs" />
     <Compile Include="Assets/Scripts/UI/BuildMenuController.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseBuildRowUI.cs" />
     <Compile Include="Assets/Scripts/Core/Mission.cs" />
     <Compile Include="Assets/Scripts/Combat/PirateFleetFactory.cs" />
     <Compile Include="Assets/Scripts/Utilities/IdUtil.cs" />

@@ -430,6 +430,7 @@ public class ResourceManager : MonoBehaviour
         RefreshCargoRows();
     }
 
+    // Build Methods
     public void TryBuildRefinery()
     {
         var p = GetPlanet();
@@ -528,6 +529,33 @@ public class ResourceManager : MonoBehaviour
         }
 
         UpdateUI();
+    }
+
+    // Defense Build Methods
+    public bool TryBuildDefense(DefenseType defenseType, int amount)
+    {
+        if (amount <= 0) return false;
+
+        var p = GetPlanet();
+        if (p == null) return false;
+
+        var defense = DefenseDatabase.Get(defenseType);
+        if (defense == null) return false;
+
+        int totalMetal = defense.metalCost * amount;
+        int totalCrystal = defense.crystalCost * amount;
+        int totalGas = defense.gasCost * amount;
+
+        if (p.metal < totalMetal || p.crystal < totalCrystal || p.gas < totalGas)
+            return false;
+
+        p.metal -= totalMetal;
+        p.crystal -= totalCrystal;
+        p.gas -= totalGas;
+
+        p.AddDefense(defenseType, amount);
+
+        return true;
     }
 
     private void ResetInput(TMP_InputField inputField)

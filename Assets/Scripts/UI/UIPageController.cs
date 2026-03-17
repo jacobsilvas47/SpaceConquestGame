@@ -8,18 +8,9 @@ public class UIController : MonoBehaviour
     public GameObject expeditionsPage;
     public GameObject consolePage;
     public GameObject inventoryPage;
+    public GameObject defensePage;
 
     public GameObject resourceHUD;
-
-    void HideAllPages()
-    {
-        if (mainPage) mainPage.SetActive(false);
-        if (buildPage) buildPage.SetActive(false);
-        if (fleetPage) fleetPage.SetActive(false);
-        if (expeditionsPage) expeditionsPage.SetActive(false);
-        if (consolePage) consolePage.SetActive(false);
-        if (inventoryPage) inventoryPage.SetActive(false);
-    }
 
     void SetResourceHUDVisible(bool visible)
     {
@@ -47,6 +38,12 @@ public class UIController : MonoBehaviour
         SetResourceHUDVisible(true);
     }
 
+     public void OpenDefensePage()
+    {
+        HideAllPages();
+        if (defensePage) defensePage.SetActive(true);
+    }
+
     public void OpenExpeditionsPage()
     {
         HideAllPages();
@@ -66,5 +63,16 @@ public class UIController : MonoBehaviour
         HideAllPages();
         if (inventoryPage) inventoryPage.SetActive(true);
         SetResourceHUDVisible(false);
+    }
+
+    void HideAllPages()
+    {
+        if (mainPage) mainPage.SetActive(false);
+        if (buildPage) buildPage.SetActive(false);
+        if (fleetPage) fleetPage.SetActive(false);
+        if (expeditionsPage) expeditionsPage.SetActive(false);
+        if (consolePage) consolePage.SetActive(false);
+        if (inventoryPage) inventoryPage.SetActive(false);
+        if (defensePage) defensePage.SetActive(false);
     }
 }

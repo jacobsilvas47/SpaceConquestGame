@@ -26,8 +26,9 @@ using System.Collections.Generic;
     public int gasExtractorLevel = 0;
     public int orbitalShipworksLevel;
 
-    // ships stationed on the planet (not traveling)
+    // Dictionaries
     public Dictionary<ShipType, int> stationedShips = new Dictionary<ShipType, int>();
+    public Dictionary<DefenseType, int> defenses = new();
 
     // Ship Queue
     public List<ShipQueueItem> shipQueue = new List<ShipQueueItem>();
@@ -84,5 +85,76 @@ using System.Collections.Generic;
         }
 
         return 0;
+    }
+
+    // Defense Structures
+    public int GetDefenseCount(DefenseType type)
+    {
+        if (defenses == null)
+            defenses = new Dictionary<DefenseType, int>();
+
+        return defenses.TryGetValue(type, out int count) ? count : 0;
+    }
+
+    public void AddDefense(DefenseType type, int amount)
+    {
+        if (defenses == null)
+            defenses = new Dictionary<DefenseType, int>();
+
+        if (!defenses.ContainsKey(type))
+            defenses[type] = 0;
+
+        defenses[type] += amount;
+    }
+
+    public int GetTotalDefenseAttack()
+    {
+        if (defenses == null) return 0;
+
+        int total = 0;
+
+        foreach (var kvp in defenses)
+        {
+            var data = DefenseDatabase.Get(kvp.Key);
+            if (data == null) continue;
+
+            total += data.attack * kvp.Value;
+        }
+
+        return total;
+    }
+
+    public int GetTotalDefenseHP()
+    {
+        if (defenses == null) return 0;
+
+        int total = 0;
+
+        foreach (var kvp in defenses)
+        {
+            var data = DefenseDatabase.Get(kvp.Key);
+            if (data == null) continue;
+
+            total += data.hp * kvp.Value;
+        }
+
+        return total;
+    }
+
+    public int GetTotalDefenseShield()
+    {
+        if (defenses == null) return 0;
+
+        int total = 0;
+
+        foreach (var kvp in defenses)
+        {
+            var data = DefenseDatabase.Get(kvp.Key);
+            if (data == null) continue;
+
+            total += data.shield * kvp.Value;
+        }
+
+        return total;
     }
 }

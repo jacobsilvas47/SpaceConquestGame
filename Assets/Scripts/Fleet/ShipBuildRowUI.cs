@@ -51,12 +51,6 @@ public class ShipBuildRowUI : MonoBehaviour
         if (gameStateHolder != null && gameStateHolder.state != null)
         {
             owned = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
-
-            requirementsMet = RequirementUtility.MeetsRequirements(
-                gameStateHolder.state,
-                planetId,
-                ship.requirements
-            );
         }
 
         if (ownedText)
@@ -67,16 +61,8 @@ public class ShipBuildRowUI : MonoBehaviour
 
         if (requirementText != null)
         {
-            if (requirementsMet)
-            {
-                requirementText.text = "";
-                requirementText.gameObject.SetActive(false);
-            }
-            else
-            {
-                requirementText.text = BuildRequirementText(ship);
-                requirementText.gameObject.SetActive(true);
-            }
+            requirementText.text = "";
+            requirementText.gameObject.SetActive(false);
         }
     }
 

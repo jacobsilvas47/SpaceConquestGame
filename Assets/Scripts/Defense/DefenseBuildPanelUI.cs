@@ -50,12 +50,12 @@ public class DefenseBuildPanelUI : MonoBehaviour
             return;
 
         if (totalAttackText)
-            totalAttackText.text = $"Defense Attack: {NumberFormatter.Format(planet.GetTotalDefenseAttack())}";
+            totalAttackText.text = $"Planet Attack: {NumberFormatter.Format(planet.GetTotalDefenseAttack())}";
 
         if (totalHPText)
-            totalHPText.text = $"Defense HP: {NumberFormatter.Format(planet.GetTotalDefenseHP())}";
+            totalHPText.text = $"Planet HP: {NumberFormatter.Format(planet.GetTotalDefenseHP())}";
 
         if (totalShieldText)
-            totalShieldText.text = $"Defense Shield: {NumberFormatter.Format(planet.GetTotalDefenseShield())}";
+            totalShieldText.text = $"Planet Shield: {NumberFormatter.Format(planet.GetTotalDefenseShield())}";
     }
 }

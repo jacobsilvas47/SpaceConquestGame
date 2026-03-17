@@ -5,6 +5,11 @@ public static class BattleResolver
 {
     public static BattleResult Resolve(Fleet attacker, Fleet defender)
     {
+        return Resolve(attacker, defender, null);
+    }
+
+    public static BattleResult Resolve(Fleet attacker, Fleet defender, PlanetState defenderPlanet)
+    {
         BattleResult result = new BattleResult();
 
         if (attacker == null || defender == null)
@@ -13,8 +18,22 @@ public static class BattleResolver
             return result;
         }
 
+        int defenseAttack = 0;
+        int defenseHP = 0;
+        int defenseShield = 0;
+
+        if (defenderPlanet != null)
+        {
+            defenseAttack = defenderPlanet.GetTotalDefenseAttack();
+            defenseHP = defenderPlanet.GetTotalDefenseHP();
+            defenseShield = defenderPlanet.GetTotalDefenseShield();
+        }
+
         int attackerPower = attacker.CombatPowerScore();
-        int defenderPower = defender.CombatPowerScore();
+
+        int defenderFleetPower = defender.CombatPowerScore();
+        int defenderDefensePower = defenseAttack + defenseHP + defenseShield;
+        int defenderPower = defenderFleetPower + defenderDefensePower;
 
         result.attackerPower = attackerPower;
         result.defenderPower = defenderPower;
@@ -40,6 +59,12 @@ public static class BattleResolver
 
         ApplyLosses(attacker, result.attackerLossPercent, result.attackerLosses);
         ApplyLosses(defender, result.defenderLossPercent, result.defenderLosses);
+
+        if (defenderPlanet != null)
+        {
+            float defenseLossPercent = Mathf.Clamp01(result.defenderLossPercent * 0.65f);
+            defenderPlanet.ApplyDefenseLossesByPercent(defenseLossPercent);
+        }
 
         return result;
     }

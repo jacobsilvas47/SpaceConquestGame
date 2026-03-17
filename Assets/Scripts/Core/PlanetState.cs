@@ -29,6 +29,32 @@ using System.Collections.Generic;
     // Dictionaries
     public Dictionary<ShipType, int> stationedShips = new Dictionary<ShipType, int>();
     public Dictionary<DefenseType, int> defenses = new();
+    public Dictionary<DefenseType, int> ApplyDefenseLossesByPercent(float lossPercent)
+    {
+        Dictionary<DefenseType, int> losses = new Dictionary<DefenseType, int>();
+
+        if (defenses == null || defenses.Count == 0)
+            return losses;
+
+        List<DefenseType> keys = new List<DefenseType>(defenses.Keys);
+
+        foreach (DefenseType type in keys)
+        {
+            int current = GetDefenseCount(type);
+            if (current <= 0) continue;
+
+            int lost = UnityEngine.Mathf.CeilToInt(current * lossPercent);
+            if (lost > current) lost = current;
+
+            if (lost > 0)
+            {
+                RemoveDefense(type, lost);
+                losses[type] = lost;
+            }
+        }
+
+        return losses;
+    }
 
     // Ship Queue
     public List<ShipQueueItem> shipQueue = new List<ShipQueueItem>();
@@ -105,6 +131,20 @@ using System.Collections.Generic;
             defenses[type] = 0;
 
         defenses[type] += amount;
+    }
+
+    public void RemoveDefense(DefenseType type, int amount)
+    {
+        if (defenses == null)
+            defenses = new Dictionary<DefenseType, int>();
+
+        if (!defenses.ContainsKey(type))
+            return;
+
+        defenses[type] -= amount;
+
+        if (defenses[type] <= 0)
+            defenses.Remove(type);
     }
 
     public int GetTotalDefenseAttack()

@@ -9,7 +9,8 @@ public class Mission
     public MissionStatus status;
 
     public string originPlanetId;
-    public string targetPlanetId; // optional, for expedition can be "deep_space" or null
+    public string targetId;
+    public TargetType targetType;
 
     public string fleetId; // reference to the fleet being used
 
@@ -18,14 +19,14 @@ public class Mission
     public double arriveTime;
     public double returnTime;
 
-    public Mission(MissionType type, string originPlanetId, string targetPlanetId, string fleetId)
+    public Mission(MissionType type, string originPlanetId, string targetId, string fleetId)
     {
         missionId = IdUtil.NewId("msn");
         missionType = type;
         status = MissionStatus.EnRoute;
 
         this.originPlanetId = originPlanetId;
-        this.targetPlanetId = targetPlanetId;
+        this.targetId = targetId;
         this.fleetId = fleetId;
     }
 }

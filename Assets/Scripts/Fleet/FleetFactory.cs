@@ -62,4 +62,25 @@ public static class FleetFactory
         state.fleets[fleet.fleetId] = fleet;
         return fleet.fleetId;
     }
+
+    public static Fleet CreateStationedFleet(GameState state, string planetId)
+    {
+        if (state == null) return null;
+
+        var planet = state.GetPlanet(planetId);
+        if (planet == null) return null;
+
+        var fleet = new Fleet(planetId);
+
+        foreach (ShipType shipType in Enum.GetValues(typeof(ShipType)))
+        {
+            int amount = planet.GetStationed(shipType);
+            if (amount > 0)
+            {
+                fleet.AddShips(shipType, amount);
+            }
+        }
+
+        return fleet;
+    }
 }

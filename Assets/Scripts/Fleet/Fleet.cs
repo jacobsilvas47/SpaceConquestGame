@@ -5,6 +5,9 @@ using System.Collections.Generic;
 [Serializable]
 public class Fleet
 {
+    public int cargoMetal;
+    public int cargoCrystal;
+    public int cargoGas;
     public string fleetId;
 
     // which planet it launched from

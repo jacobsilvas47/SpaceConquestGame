@@ -19,7 +19,7 @@ public class ExpeditionMission : Mission
     public List<ExpeditionItemReward> itemsFound = new List<ExpeditionItemReward>();
 
     public ExpeditionMission(string originPlanetId, string fleetId, int seed)
-        : base(MissionType.Expedition, originPlanetId, targetPlanetId: "deep_space", fleetId: fleetId)
+        : base(MissionType.Expedition, originPlanetId, targetId: "deep_space", fleetId: fleetId)
     {
         this.seed = seed;
         resolved = false;

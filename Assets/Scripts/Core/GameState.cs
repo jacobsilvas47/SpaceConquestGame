@@ -13,6 +13,7 @@ public class GameState
 
     public Dictionary<string, PlanetState> planets = new Dictionary<string, PlanetState>();
     public Dictionary<string, Fleet> fleets = new Dictionary<string, Fleet>();
+    public Dictionary<string, AttackTarget> aiTargets = new Dictionary<string, AttackTarget>();
 
     // keep missions as a list so order is stable
     public List<Mission> missions = new List<Mission>();
@@ -30,5 +31,13 @@ public class GameState
     {
         fleets.TryGetValue(fleetId, out var f);
         return f;
+    }
+
+    public AttackTarget GetAITarget(string targetId)
+    {
+        if (string.IsNullOrEmpty(targetId)) return null;
+
+        aiTargets.TryGetValue(targetId, out var target);
+        return target;
     }
 }

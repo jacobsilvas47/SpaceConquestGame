@@ -36,8 +36,6 @@ public class GameState
     public AttackTarget GetAITarget(string targetId)
     {
         if (string.IsNullOrEmpty(targetId)) return null;
-
-        aiTargets.TryGetValue(targetId, out var target);
-        return target;
+        return aiTargets.TryGetValue(targetId, out var target) ? target : null;
     }
 }

@@ -62,6 +62,7 @@
     <Compile Include="Assets/Scripts/Fleet/FleetPageUI.cs" />
     <Compile Include="Assets/Scripts/UI/UIPageController.cs" />
     <Compile Include="Assets/Scripts/Requirements/RequirementUtility.cs" />
+    <Compile Include="Assets/Scripts/Missions/AITargetSeeder.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark02.cs" />
     <Compile Include="Assets/Scripts/UI/ConsolePageUI.cs" />
     <Compile Include="Assets/Scripts/Defense/DefenseBuildPanelUI.cs" />
@@ -91,8 +92,8 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/SkewTextExample.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/WarpTextExample.cs" />
     <Compile Include="Assets/Scripts/UI/ExpeditionSlotListUI.cs" />
-    <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/ShaderPropAnimator.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetFactory.cs" />
+    <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/ShaderPropAnimator.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionTier.cs" />
     <Compile Include="Assets/Scripts/Missions/TargetType.cs" />
     <Compile Include="Assets/Scripts/UI/NumberFormatter.cs" />
@@ -101,6 +102,7 @@
     <Compile Include="Assets/Scripts/Defense/DefenseData.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryManager.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextInfoDebugTool.cs" />
+    <Compile Include="Assets/Scripts/Missions/AITargetGenerator.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetBuildPanelUI.cs" />
     <Compile Include="Assets/Scripts/Combat/BattleResolver.cs" />
     <Compile Include="Assets/Scripts/UI/ExpeditionSlotRowUI.cs" />
@@ -134,6 +136,7 @@
     <Compile Include="Assets/Scripts/Missions/MissionStatus.cs" />
     <Compile Include="Assets/Scripts/Combat/PirateFleetFactory.cs" />
     <Compile Include="Assets/Scripts/Utilities/IdUtil.cs" />
+    <Compile Include="Assets/Scripts/AITargetUI/AITargetsPanelUI.cs" />
     <Compile Include="Assets/Scripts/Missions/MissionType.cs" />
     <Compile Include="Assets/Scripts/UI/ExpeditionPanelUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/DropdownSample.cs" />
@@ -155,6 +158,7 @@
     <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeFormula.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextMeshProFloatingText.cs" />
     <Compile Include="Assets/Scripts/Debug/PirateEncounterTest.cs" />
+    <Compile Include="Assets/Scripts/AITargetUI/AITagetRowUI.cs" />
     <Compile Include="Assets/Scripts/Combat/BattleResult.cs" />
     <Compile Include="Assets/Scripts/Requirements/RequirementType.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryStack.cs" />

@@ -154,6 +154,12 @@ public class ResourceManager : MonoBehaviour
             gameStateHolder = FindFirstObjectByType<GameStateHolder>();
         }
 
+        // Seed AI targets once
+        if (gameStateHolder != null && gameStateHolder.state != null)
+        {
+            AITargetSeeder.Seed(gameStateHolder.state);
+        }
+
         UpdateUI();
         RefreshBasicFighterRow();
         RefreshCargoRows();

@@ -70,7 +70,7 @@ public static class MissionEngine
         return mission.missionId;
     }
 
-    public static string TrySendAttack(GameState state, string fleetId, string targetPlanetId, double durationSeconds)
+    public static string TrySendAttack(GameState state, string fleetId, string targetId, TargetType targetType, double durationSeconds)
     {
         if (state == null)
         {
@@ -84,9 +84,9 @@ public static class MissionEngine
             return null;
         }
 
-        if (string.IsNullOrEmpty(targetPlanetId))
+        if (string.IsNullOrEmpty(targetId))
         {
-            Debug.LogError("TrySendAttack: targetPlanetId is null/empty");
+            Debug.LogError("TrySendAttack: targetId is null/empty");
             return null;
         }
 
@@ -97,19 +97,20 @@ public static class MissionEngine
         }
 
         Fleet fleet = state.GetFleet(fleetId);
-        if (fleet == null)
+        if (fleet == null || fleet.IsEmpty())
         {
-            Debug.LogError($"TrySendAttack: fleet '{fleetId}' not found");
+            Debug.LogError($"TrySendAttack: fleet '{fleetId}' missing or empty");
             return null;
         }
 
-        if (fleet.IsEmpty())
-        {
-            Debug.LogError($"TrySendAttack: fleet '{fleetId}' is empty");
-            return null;
-        }
+        var mission = new Mission(
+            MissionType.Attack,
+            fleet.originPlanetId,
+            targetId,
+            fleetId
+        );
 
-        var mission = new Mission(MissionType.Attack, fleet.originPlanetId, targetPlanetId, fleetId);
+mission.targetType = targetType;
 
         double now = state.gameTime;
         mission.departTime = now;
@@ -118,8 +119,7 @@ public static class MissionEngine
 
         state.missions.Add(mission);
 
-        Debug.Log($"[ATTACK] Created mission {mission.missionId}, fleetId={fleetId}, target={targetPlanetId}");
-
+        Debug.Log($"[ATTACK] Created mission {mission.missionId}, fleetId={fleetId}, target={targetId}, type={targetType}");
         return mission.missionId;
     }
 
@@ -267,38 +267,154 @@ public static class MissionEngine
         Debug.Log($"[PLUNDER] Took {metalTaken} metal, {crystalTaken} crystal, {gasTaken} gas.");
     }
 
-    private static void ResolveAttack(GameState state, Mission mission)
-    {
-        if (state == null || mission == null)
-            return;
-
-        Fleet attacker = state.GetFleet(mission.fleetId);
-        if (attacker == null)
+        private static void ResolveAttack(GameState state, Mission mission)
         {
-            Debug.LogWarning($"ResolveAttack: attacker fleet '{mission.fleetId}' not found.");
-            return;
+            if (state == null || mission == null)
+                return;
+
+            Fleet attacker = state.GetFleet(mission.fleetId);
+            if (attacker == null)
+            {
+                Debug.LogWarning($"ResolveAttack: attacker fleet '{mission.fleetId}' not found.");
+                return;
+            }
+
+            switch (mission.targetType)
+            {
+                case TargetType.PlayerPlanet:
+                    ResolveAttackVsPlayerPlanet(state, mission);
+                    break;
+
+                case TargetType.AITarget:
+                    ResolveAttackVsAITarget(state, mission);
+                    break;
+
+                default:
+                    Debug.LogWarning($"ResolveAttack: unsupported target type {mission.targetType}");
+                    break;
+            }
         }
 
-        PlanetState defenderPlanet = state.GetPlanet(mission.targetId);
-        if (defenderPlanet == null)
+        private static void ResolveAttackVsPlayerPlanet(GameState state, Mission mission)
         {
-            Debug.LogWarning($"ResolveAttack: target planet '{mission.targetId}' not found.");
-            return;
+            if (state == null || mission == null)
+                return;
+
+            Fleet attacker = state.GetFleet(mission.fleetId);
+            if (attacker == null)
+            {
+                Debug.LogWarning($"ResolveAttackVsPlayerPlanet: attacker fleet '{mission.fleetId}' not found.");
+                return;
+            }
+
+            PlanetState defenderPlanet = state.GetPlanet(mission.targetId);
+            if (defenderPlanet == null)
+            {
+                Debug.LogWarning($"ResolveAttackVsPlayerPlanet: target planet '{mission.targetId}' not found.");
+                return;
+            }
+
+            Fleet defenderFleet = FleetFactory.CreateStationedFleet(state, mission.targetId);
+
+            BattleResult result = BattleResolver.Resolve(attacker, defenderFleet, defenderPlanet);
+
+            ApplyBattleLosses(attacker, defenderFleet, defenderPlanet, result);
+
+            if (result.attackerWon)
+            {
+                ApplyPlunder(attacker, defenderPlanet);
+            }
+
+            Debug.Log($"[ATTACK] Player planet attack resolved. Mission {mission.missionId}, AttackerWon={result.attackerWon}");
         }
 
-        Fleet defenderFleet = FleetFactory.CreateStationedFleet(state, mission.targetId);
-
-        BattleResult result = BattleResolver.Resolve(attacker, defenderFleet, defenderPlanet);
-
-        ApplyBattleLosses(attacker, defenderFleet, defenderPlanet, result);
-
-        if (result.attackerWon)
+        private static void ResolveAttackVsAITarget(GameState state, Mission mission)
         {
-            ApplyPlunder(attacker, defenderPlanet);
+            if (state == null || mission == null)
+                return;
+
+            Fleet attacker = state.GetFleet(mission.fleetId);
+            if (attacker == null)
+            {
+                Debug.LogWarning($"ResolveAttackVsAITarget: attacker fleet '{mission.fleetId}' not found.");
+                return;
+            }
+
+            AttackTarget aiTarget = state.GetAITarget(mission.targetId);
+            if (aiTarget == null)
+            {
+                Debug.LogWarning($"ResolveAttackVsAITarget: target '{mission.targetId}' not found.");
+                return;
+            }
+
+            if (aiTarget.defendingFleet == null)
+                aiTarget.defendingFleet = new Fleet(aiTarget.targetId);
+
+            BattleResult result = BattleResolver.Resolve(attacker, aiTarget.defendingFleet);
+
+            ApplyBattleLossesVsAITarget(attacker, aiTarget, result);
+
+            if (result.attackerWon)
+                ApplyPlunderVsAITarget(attacker, aiTarget);
+
+            Debug.Log($"[ATTACK] AI target battle resolved. AttackerWon={result.attackerWon}, Target={aiTarget.displayName}");
         }
 
-        Debug.Log($"[ATTACK] Mission {mission.missionId} resolved. AttackerWon={result.attackerWon}");
-    }
+        private static void ApplyBattleLossesVsAITarget(Fleet attacker, AttackTarget aiTarget, BattleResult result)
+        {
+            if (attacker != null && result.attackerLosses != null)
+            {
+                foreach (var loss in result.attackerLosses.lostShips)
+                {
+                    attacker.RemoveShips(loss.Key, loss.Value);
+                }
+            }
+
+            if (aiTarget != null && aiTarget.defendingFleet != null && result.defenderLosses != null)
+            {
+                foreach (var loss in result.defenderLosses.lostShips)
+                {
+                    aiTarget.defendingFleet.RemoveShips(loss.Key, loss.Value);
+                }
+            }
+        }
+
+        private static void ApplyPlunderVsAITarget(Fleet attacker, AttackTarget aiTarget)
+        {
+            if (attacker == null || aiTarget == null)
+                return;
+
+            int usedCargo = attacker.cargoMetal + attacker.cargoCrystal + attacker.cargoGas;
+            int freeCargo = Mathf.Max(0, attacker.TotalCargo() - usedCargo);
+
+            if (freeCargo <= 0)
+                return;
+
+            double plunderMetal = aiTarget.metal * 0.5;
+            double plunderCrystal = aiTarget.crystal * 0.5;
+            double plunderGas = aiTarget.gas * 0.5;
+
+            double totalAvailable = plunderMetal + plunderCrystal + plunderGas;
+            if (totalAvailable <= 0)
+                return;
+
+            double totalTaken = Math.Min(freeCargo, totalAvailable);
+            double ratio = totalTaken / totalAvailable;
+
+            int metalTaken = Mathf.FloorToInt((float)(plunderMetal * ratio));
+            int crystalTaken = Mathf.FloorToInt((float)(plunderCrystal * ratio));
+            int gasTaken = Mathf.FloorToInt((float)(plunderGas * ratio));
+
+            aiTarget.metal -= metalTaken;
+            aiTarget.crystal -= crystalTaken;
+            aiTarget.gas -= gasTaken;
+
+            attacker.cargoMetal += metalTaken;
+            attacker.cargoCrystal += crystalTaken;
+            attacker.cargoGas += gasTaken;
+
+            Debug.Log($"[PLUNDER AI] Took {metalTaken} metal, {crystalTaken} crystal, {gasTaken} gas from {aiTarget.displayName}");
+        }   
 
        private static void AddExpeditionLog(GameState state, ExpeditionMission exp)
     {

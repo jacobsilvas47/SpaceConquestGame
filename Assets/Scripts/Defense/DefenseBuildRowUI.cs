@@ -11,6 +11,7 @@ public class DefenseBuildRowUI : MonoBehaviour
     public TextMeshProUGUI nameText;
     public TextMeshProUGUI costText;
     public TextMeshProUGUI ownedText;
+    public TextMeshProUGUI canBuildText;
     public TMP_InputField amountInput;
     public Button buildButton;
 
@@ -52,6 +53,12 @@ public class DefenseBuildRowUI : MonoBehaviour
 
         if (ownedText)
             ownedText.text = $"Owned: {NumberFormatter.Format(owned)}";
+
+            if (canBuildText && resourceManager != null)
+        {
+            int maxBuildable = resourceManager.GetMaxBuildableDefenses(defenseType);
+            canBuildText.text = $"Can Build: {NumberFormatter.Format(maxBuildable)}";
+        }
     }
 
     public int GetRequestedAmount()

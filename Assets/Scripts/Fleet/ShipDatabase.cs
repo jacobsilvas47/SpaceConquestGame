@@ -330,14 +330,17 @@ public static class ShipDatabase
         }
     };
 
-    public static ShipData Get(ShipType type)
-    {
-        if (dataByType.TryGetValue(type, out var data))
-            return data;
+        public static ShipData Get(ShipType type)
+        {
+            if (type == ShipType.None)
+                return null;
 
-        Debug.LogWarning($"ShipDatabase: No data found for {type}");
-        return null;
-    }
+            if (dataByType.TryGetValue(type, out var data))
+                return data;
+
+            Debug.LogWarning($"ShipDatabase: No data found for {type}");
+            return null;
+        }
 
     public static int CargoCapacity(ShipType type)
     {

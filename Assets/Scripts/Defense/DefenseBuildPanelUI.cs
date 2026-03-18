@@ -49,13 +49,95 @@ public class DefenseBuildPanelUI : MonoBehaviour
         if (planet == null)
             return;
 
+        int totalAttack = planet.GetTotalDefenseAttack() + GetStationedFleetAttack();
+        int totalHP = planet.GetTotalDefenseHP() + GetStationedFleetHP();
+        int totalShield = planet.GetTotalDefenseShield() + GetStationedFleetShield();
+
         if (totalAttackText)
-            totalAttackText.text = $"Planet Attack: {NumberFormatter.Format(planet.GetTotalDefenseAttack())}";
+            totalAttackText.text = $"Planet Attack: {NumberFormatter.Format(totalAttack)}";
 
         if (totalHPText)
-            totalHPText.text = $"Planet HP: {NumberFormatter.Format(planet.GetTotalDefenseHP())}";
+            totalHPText.text = $"Planet HP: {NumberFormatter.Format(totalHP)}";
 
         if (totalShieldText)
-            totalShieldText.text = $"Planet Shield: {NumberFormatter.Format(planet.GetTotalDefenseShield())}";
+            totalShieldText.text = $"Planet Shield: {NumberFormatter.Format(totalShield)}";
+    }
+
+    private int GetStationedFleetAttack()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null)
+            return 0;
+
+        int total = 0;
+
+        foreach (ShipType shipType in System.Enum.GetValues(typeof(ShipType)))
+        {
+            if (shipType == ShipType.None)
+                continue;
+
+            int count = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
+            if (count <= 0)
+                continue;
+
+            ShipData ship = ShipDatabase.Get(shipType);
+            if (ship == null)
+                continue;
+
+            total += count * ship.attack;
+        }
+
+        return total;
+    }
+
+    private int GetStationedFleetHP()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null)
+            return 0;
+
+        int total = 0;
+
+        foreach (ShipType shipType in System.Enum.GetValues(typeof(ShipType)))
+        {
+            if (shipType == ShipType.None)
+                continue;
+
+            int count = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
+            if (count <= 0)
+                continue;
+
+            ShipData ship = ShipDatabase.Get(shipType);
+            if (ship == null)
+                continue;
+
+            total += count * ship.maxHp;
+        }
+
+        return total;
+    }
+
+    private int GetStationedFleetShield()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null)
+            return 0;
+
+        int total = 0;
+
+        foreach (ShipType shipType in System.Enum.GetValues(typeof(ShipType)))
+        {
+            if (shipType == ShipType.None)
+                continue;
+
+            int count = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
+            if (count <= 0)
+                continue;
+
+            ShipData ship = ShipDatabase.Get(shipType);
+            if (ship == null)
+                continue;
+
+            total += count * ship.defense;
+        }
+
+        return total;
     }
 }

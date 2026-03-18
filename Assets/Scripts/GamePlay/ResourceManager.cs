@@ -666,6 +666,52 @@ public class ResourceManager : MonoBehaviour
         }
     }
 
+    public int GetMaxBuildableShips(ShipType shipType)
+    {
+        var p = GetPlanet();
+        if (p == null) return 0;
+
+        var data = ShipDatabase.Get(shipType);
+        if (data == null) return 0;
+
+        int maxMetal = data.metalCost > 0
+            ? Mathf.FloorToInt((float)(p.metal / data.metalCost))
+            : int.MaxValue;
+
+        int maxCrystal = data.crystalCost > 0
+            ? Mathf.FloorToInt((float)(p.crystal / data.crystalCost))
+            : int.MaxValue;
+
+        int maxGas = data.gasCost > 0
+            ? Mathf.FloorToInt((float)(p.gas / data.gasCost))
+            : int.MaxValue;
+
+        return Mathf.Max(0, Mathf.Min(maxMetal, Mathf.Min(maxCrystal, maxGas)));
+    }
+
+    public int GetMaxBuildableDefenses(DefenseType defenseType)
+    {
+        var p = GetPlanet();
+        if (p == null) return 0;
+
+        var data = DefenseDatabase.Get(defenseType);
+        if (data == null) return 0;
+
+        int maxMetal = data.metalCost > 0
+            ? Mathf.FloorToInt((float)(p.metal / data.metalCost))
+            : int.MaxValue;
+
+        int maxCrystal = data.crystalCost > 0
+            ? Mathf.FloorToInt((float)(p.crystal / data.crystalCost))
+            : int.MaxValue;
+
+        int maxGas = data.gasCost > 0
+            ? Mathf.FloorToInt((float)(p.gas / data.gasCost))
+            : int.MaxValue;
+
+        return Mathf.Max(0, Mathf.Min(maxMetal, Mathf.Min(maxCrystal, maxGas)));
+    }
+
     public bool TryBuildShip(ShipType shipType, int amount, out string error)
     {
         error = null;

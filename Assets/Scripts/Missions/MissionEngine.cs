@@ -421,132 +421,133 @@ mission.targetType = targetType;
             Debug.Log($"[PLUNDER AI] Took {metalTaken} metal, {crystalTaken} crystal, {gasTaken} gas from {aiTarget.displayName}");
         }   
  
-        private static void AddAttackMissionReport(
-            GameState state,
-            Mission mission,
-            BattleResult result,
-            PlanetState defenderPlanet = null,
-            AttackTarget aiTarget = null)
+    private static void AddAttackMissionReport(
+        GameState state,
+        Mission mission,
+        BattleResult result,
+        PlanetState defenderPlanet = null,
+        AttackTarget aiTarget = null)
+    {
+        if (state == null || mission == null || result == null)
+            return;
+
+        if (mission.reportCreated)
         {
-            if (state == null || mission == null || result == null)
-                return;
-
-            string targetName = MissionUIUtility.GetTargetDisplayName(state, mission);
-            string outcome = result.attackerWon ? "Victory" : "Defeat";
-            string title = $"Attack Report, {targetName}";
-
-            System.Text.StringBuilder summary = new System.Text.StringBuilder();
-            summary.AppendLine($"Your fleet attacked {targetName}.");
-            summary.AppendLine($"Outcome: {outcome}");
-            summary.AppendLine($"Attacker Power: {result.attackerPower}");
-            summary.AppendLine($"Defender Power: {result.defenderPower}");
-
-            System.Text.StringBuilder details = new System.Text.StringBuilder();
-
-            details.AppendLine("=== BATTLE REPORT ===");
-            details.AppendLine(result.attackerWon ? "Attacker Victory" : "Defender Victory");
-            details.AppendLine();
-            details.AppendLine($"Attacker Power: {result.attackerPower}");
-            details.AppendLine($"Defender Power: {result.defenderPower}");
-            details.AppendLine();
-            details.AppendLine($"Attacker Loss %: {result.attackerLossPercent} %");
-            details.AppendLine($"Defender Loss %: {result.defenderLossPercent} %");
-            details.AppendLine();
-
-            if (result.attackerLosses != null &&
-                result.attackerLosses.lostShips != null &&
-                result.attackerLosses.lostShips.Count > 0)
-            {
-                details.AppendLine("Attacker Losses:");
-                foreach (var loss in result.attackerLosses.lostShips)
-                {
-                    details.AppendLine($"{loss.Value} {loss.Key}");
-                }
-                details.AppendLine();
-            }
-
-            if (result.defenderLosses != null &&
-                result.defenderLosses.lostShips != null &&
-                result.defenderLosses.lostShips.Count > 0)
-            {
-                details.AppendLine("Defender Losses:");
-                foreach (var loss in result.defenderLosses.lostShips)
-                {
-                    details.AppendLine($"{loss.Value} {loss.Key}");
-                }
-                details.AppendLine();
-            }
-
-            Fleet attackerFleetAfter = state.GetFleet(mission.fleetId);
-            if (attackerFleetAfter != null)
-            {
-                details.AppendLine("Attacker Remaining Fleet:");
-                AppendFleetContents(details, attackerFleetAfter);
-                details.AppendLine();
-            }
-
-            if (mission.targetType == TargetType.PlayerPlanet)
-            {
-                Fleet defenderFleetAfter = FleetFactory.CreateStationedFleet(state, mission.targetId);
-
-                details.AppendLine("Defender Remaining Fleet:");
-                AppendFleetContents(details, defenderFleetAfter);
-                details.AppendLine();
-
-                if (defenderPlanet != null)
-                {
-                    details.AppendLine("Planetary Defenses:");
-                    details.AppendLine($"Defense Attack: {defenderPlanet.GetTotalDefenseAttack()}");
-                    details.AppendLine($"Defense HP: {defenderPlanet.GetTotalDefenseHP()}");
-                    details.AppendLine($"Defense Shield: {defenderPlanet.GetTotalDefenseShield()}");
-                    details.AppendLine();
-                }
-            }
-            else if (mission.targetType == TargetType.AITarget)
-            {
-                if (aiTarget != null && aiTarget.defendingFleet != null)
-                {
-                    details.AppendLine("Defender Remaining Fleet:");
-                    AppendFleetContents(details, aiTarget.defendingFleet);
-                    details.AppendLine();
-                }
-            }
-
-            if (attackerFleetAfter != null)
-            {
-                int totalLoot =
-                    attackerFleetAfter.cargoMetal +
-                    attackerFleetAfter.cargoCrystal +
-                    attackerFleetAfter.cargoGas;
-
-                if (totalLoot > 0)
-                {
-                    details.AppendLine("Cargo Returning:");
-                    details.AppendLine($"Metal: {attackerFleetAfter.cargoMetal}");
-                    details.AppendLine($"Crystal: {attackerFleetAfter.cargoCrystal}");
-                    details.AppendLine($"Gas: {attackerFleetAfter.cargoGas}");
-                    details.AppendLine();
-                }
-            }
-
-            MissionReport report = new MissionReport(
-                MissionType.Attack,
-                title,
-                summary.ToString(),
-                details.ToString(),
-                mission.originPlanetId,
-                mission.targetId,
-                targetName,
-                state.gameTime,
-                result.attackerWon
-            );
-
-            Debug.Log($"[MissionReport] Adding attack report: {title}");
-            state.AddMissionReport(report);
-            Debug.Log($"[MissionReport] missionReports now = {state.missionReports.Count}");
-
-            state.AddMissionReport(report);
+            Debug.Log($"[MissionReport] Skipping duplicate report for mission {mission.missionId}");
+            return;
         }
+
+        string targetName = MissionUIUtility.GetTargetDisplayName(state, mission);
+        string outcome = result.attackerWon ? "Victory" : "Defeat";
+        string title = $"Attack Report, {targetName}";
+
+        System.Text.StringBuilder summary = new System.Text.StringBuilder();
+        summary.AppendLine($"Your fleet attacked {targetName}.");
+        summary.AppendLine($"Outcome: {outcome}");
+        summary.AppendLine($"Attacker Power: {result.attackerPower}");
+        summary.AppendLine($"Defender Power: {result.defenderPower}");
+
+        System.Text.StringBuilder details = new System.Text.StringBuilder();
+
+        details.AppendLine("=== BATTLE REPORT ===");
+        details.AppendLine(result.attackerWon ? "Attacker Victory" : "Defender Victory");
+        details.AppendLine();
+        details.AppendLine($"Attacker Power: {result.attackerPower}");
+        details.AppendLine($"Defender Power: {result.defenderPower}");
+        details.AppendLine();
+        details.AppendLine($"Attacker Loss %: {result.attackerLossPercent} %");
+        details.AppendLine($"Defender Loss %: {result.defenderLossPercent} %");
+        details.AppendLine();
+
+        if (result.attackerLosses != null &&
+            result.attackerLosses.lostShips != null &&
+            result.attackerLosses.lostShips.Count > 0)
+        {
+            details.AppendLine("Attacker Losses:");
+            foreach (var loss in result.attackerLosses.lostShips)
+                details.AppendLine($"{loss.Value} {loss.Key}");
+            details.AppendLine();
+        }
+
+        if (result.defenderLosses != null &&
+            result.defenderLosses.lostShips != null &&
+            result.defenderLosses.lostShips.Count > 0)
+        {
+            details.AppendLine("Defender Losses:");
+            foreach (var loss in result.defenderLosses.lostShips)
+                details.AppendLine($"{loss.Value} {loss.Key}");
+            details.AppendLine();
+        }
+
+        Fleet attackerFleetAfter = state.GetFleet(mission.fleetId);
+        if (attackerFleetAfter != null)
+        {
+            details.AppendLine("Attacker Remaining Fleet:");
+            AppendFleetContents(details, attackerFleetAfter);
+            details.AppendLine();
+        }
+
+        if (mission.targetType == TargetType.PlayerPlanet)
+        {
+            Fleet defenderFleetAfter = FleetFactory.CreateStationedFleet(state, mission.targetId);
+
+            details.AppendLine("Defender Remaining Fleet:");
+            AppendFleetContents(details, defenderFleetAfter);
+            details.AppendLine();
+
+            if (defenderPlanet != null)
+            {
+                details.AppendLine("Planetary Defenses:");
+                details.AppendLine($"Defense Attack: {defenderPlanet.GetTotalDefenseAttack()}");
+                details.AppendLine($"Defense HP: {defenderPlanet.GetTotalDefenseHP()}");
+                details.AppendLine($"Defense Shield: {defenderPlanet.GetTotalDefenseShield()}");
+                details.AppendLine();
+            }
+        }
+        else if (mission.targetType == TargetType.AITarget)
+        {
+            if (aiTarget != null && aiTarget.defendingFleet != null)
+            {
+                details.AppendLine("Defender Remaining Fleet:");
+                AppendFleetContents(details, aiTarget.defendingFleet);
+                details.AppendLine();
+            }
+        }
+
+        if (attackerFleetAfter != null)
+        {
+            int totalLoot =
+                attackerFleetAfter.cargoMetal +
+                attackerFleetAfter.cargoCrystal +
+                attackerFleetAfter.cargoGas;
+
+            if (totalLoot > 0)
+            {
+                details.AppendLine("Cargo Returning:");
+                details.AppendLine($"Metal: {attackerFleetAfter.cargoMetal}");
+                details.AppendLine($"Crystal: {attackerFleetAfter.cargoCrystal}");
+                details.AppendLine($"Gas: {attackerFleetAfter.cargoGas}");
+                details.AppendLine();
+            }
+        }
+
+        MissionReport report = new MissionReport(
+            MissionType.Attack,
+            title,
+            summary.ToString(),
+            details.ToString(),
+            mission.originPlanetId,
+            mission.targetId,
+            targetName,
+            state.gameTime,
+            result.attackerWon
+        );
+
+        Debug.Log($"[MissionReport] Adding attack report: {title}");
+        state.AddMissionReport(report);
+        mission.reportCreated = true;
+        Debug.Log($"[MissionReport] missionReports now = {state.missionReports.Count}");
+    }
 
         private static void AddExpeditionMissionReport(GameState state, ExpeditionMission exp)
         {

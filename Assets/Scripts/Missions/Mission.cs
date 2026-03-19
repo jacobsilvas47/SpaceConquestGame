@@ -18,6 +18,8 @@ public class Mission
     public double departTime;
     public double arriveTime;
     public double returnTime;
+    public bool attackReportCreated;
+    public bool reportCreated = false;
 
     public Mission(MissionType type, string originPlanetId, string targetId, string fleetId)
     {

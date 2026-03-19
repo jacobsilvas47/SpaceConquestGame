@@ -1,58 +1,31 @@
-using System.Text;
 using TMPro;
 using UnityEngine;
 
 public class ConsoleLogRowUI : MonoBehaviour
 {
-    public TextMeshProUGUI timeText;
-    public TextMeshProUGUI titleText;
-    public TextMeshProUGUI detailsText;
+    [SerializeField] private TextMeshProUGUI timeText;
+    [SerializeField] private TextMeshProUGUI titleText;
+    [SerializeField] private TextMeshProUGUI detailsText;
 
-    public void Bind(ExpeditionLogEntry e)
+    public void Bind(MissionReport report)
     {
-        if (e == null) return;
+        if (report == null) return;
 
-        if (timeText) timeText.text = FormatTime(e.timestamp);
-        if (titleText) titleText.text = "Expedition Complete";
+        if (timeText)
+            timeText.text = FormatTime(report.createdAtGameTime);
 
-        if (!detailsText) return;
+        if (titleText)
+            titleText.text = report.title;
 
-        // ✅ 1) Use the mission-provided summary if present (covers FOUND_SHIPS, EMPTY, JACKPOT, etc.)
-        string details = e.summaryText;
-
-        // ✅ 2) Fallback to numeric breakdown only if summaryText is missing
-        if (string.IsNullOrWhiteSpace(details))
-        {
-            details = $"+{e.metalGained} Metal, +{e.crystalGained} Crystal, +{e.gasGained} Gas";
-        }
-
-        // ✅ 3) Append items if any
-        if (e.itemsGained != null && e.itemsGained.Count > 0)
-        {
-            var sb = new StringBuilder();
-            sb.Append(details);
-            sb.Append(" | Items: ");
-
-            for (int i = 0; i < e.itemsGained.Count; i++)
-            {
-                var it = e.itemsGained[i];
-                sb.Append($"+{it.amount} {ItemDatabase.GetName(it.itemId)}");
-                if (i < e.itemsGained.Count - 1) sb.Append(", ");
-            }
-
-            detailsText.text = sb.ToString();
-        }
-        else
-        {
-            detailsText.text = details;
-        }
+        if (detailsText)
+            detailsText.text = report.details;
     }
 
-    private string FormatTime(double t)
+    private string FormatTime(double time)
     {
-        int total = Mathf.Max(0, Mathf.FloorToInt((float)t));
-        int m = total / 60;
-        int s = total % 60;
-        return $"{m:00}:{s:00}";
+        int totalSeconds = Mathf.FloorToInt((float)time);
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return $"{minutes:00}:{seconds:00}";
     }
 }

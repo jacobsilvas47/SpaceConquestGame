@@ -7,8 +7,6 @@ public class GameState
 {
     [Header("Expeditions")]
     public int expeditionSlotsUnlocked = 1;
-    public List<ExpeditionLogEntry> expeditionLog = new List<ExpeditionLogEntry>();
-
     public double gameTime; // your “clock”, you can increment from a MonoBehaviour
 
     public Dictionary<string, PlanetState> planets = new Dictionary<string, PlanetState>();
@@ -16,7 +14,28 @@ public class GameState
     public Dictionary<string, AttackTarget> aiTargets = new Dictionary<string, AttackTarget>();
 
     // keep missions as a list so order is stable
+    public List<ExpeditionLogEntry> expeditionLog = new List<ExpeditionLogEntry>();
     public List<Mission> missions = new List<Mission>();
+
+    public List<MissionReport> missionReports = new List<MissionReport>();
+
+    public void AddMissionReport(MissionReport report)
+    {
+        if (report == null) return;
+
+        if (missionReports == null)
+            missionReports = new List<MissionReport>();
+
+        missionReports.Add(report);
+    }
+
+    public List<MissionReport> GetMissionReports()
+    {
+        if (missionReports == null)
+            missionReports = new List<MissionReport>();
+
+        return missionReports;
+    }
 
     // Inventory
     public InventoryState inventory = new InventoryState();

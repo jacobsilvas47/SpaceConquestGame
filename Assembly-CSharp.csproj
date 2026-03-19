@@ -49,6 +49,7 @@
     <Analyzer Include="/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents/Resources/BuildPipeline/Unity.SourceGenerators/Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets/Scripts/Missions/MissionUIUtility.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextEventHandler.cs" />
     <Compile Include="Assets/Scripts/Requirements/RequirementTest.cs" />
     <Compile Include="Assets/Scripts/Combat/BattleReportFormatter.cs" />
@@ -64,7 +65,6 @@
     <Compile Include="Assets/Scripts/Requirements/RequirementUtility.cs" />
     <Compile Include="Assets/Scripts/Missions/AITargetSeeder.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark02.cs" />
-    <Compile Include="Assets/Scripts/UI/ConsolePageUI.cs" />
     <Compile Include="Assets/Scripts/Defense/DefenseBuildPanelUI.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipCategory.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetCombatCalculator.cs" />
@@ -79,6 +79,7 @@
     <Compile Include="Assets/Scripts/Missions/AttackTarget.cs" />
     <Compile Include="Assets/Scripts/Items/ItemEnums.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipQueueRowUI.cs" />
+    <Compile Include="Assets/Scripts/Missions/ActiveMissionsPanelUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/VertexJitter.cs" />
     <Compile Include="Assets/Scripts/Core/GameState.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_UiFrameRateCounter.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="Assets/Scripts/Fleet/FleetFactory.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/ShaderPropAnimator.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionTier.cs" />
+    <Compile Include="Assets/Scripts/Missions/MissionReport.cs" />
     <Compile Include="Assets/Scripts/Missions/TargetType.cs" />
     <Compile Include="Assets/Scripts/UI/NumberFormatter.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipCategoryDatabase.cs" />
@@ -130,6 +132,7 @@
     <Compile Include="Assets/Scripts/Expeditions/FleetComposition.cs" />
     <Compile Include="Assets/Scripts/GamePlay/ResourceManager.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/CameraController.cs" />
+    <Compile Include="Assets/Scripts/Missions/MissionConsolePanelUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark03.cs" />
     <Compile Include="Assets/Scripts/UI/BuildMenuController.cs" />
     <Compile Include="Assets/Scripts/Defense/DefenseBuildRowUI.cs" />
@@ -159,6 +162,7 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextMeshProFloatingText.cs" />
     <Compile Include="Assets/Scripts/Debug/PirateEncounterTest.cs" />
     <Compile Include="Assets/Scripts/AITargetUI/AITagetRowUI.cs" />
+    <Compile Include="Assets/Scripts/Missions/MissionRowUI.cs" />
     <Compile Include="Assets/Scripts/Combat/BattleResult.cs" />
     <Compile Include="Assets/Scripts/Requirements/RequirementType.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryStack.cs" />

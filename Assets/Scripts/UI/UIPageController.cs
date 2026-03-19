@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class UIController : MonoBehaviour
 {
+    [SerializeField] private GameObject targetsPage;
+    [SerializeField] private GameObject activeMissionsPage;
     public GameObject mainPage;
     public GameObject buildPage;
     public GameObject fleetPage;
@@ -65,6 +67,18 @@ public class UIController : MonoBehaviour
         SetResourceHUDVisible(false);
     }
 
+    public void ShowTargetsPage()
+    {
+        HideAllPages();
+        if (targetsPage != null) targetsPage.SetActive(true);
+    }
+
+    public void ShowActiveMissionsPage()
+    {
+        HideAllPages();
+        if (activeMissionsPage != null) activeMissionsPage.SetActive(true);
+    }
+
     void HideAllPages()
     {
         if (mainPage) mainPage.SetActive(false);
@@ -74,5 +88,7 @@ public class UIController : MonoBehaviour
         if (consolePage) consolePage.SetActive(false);
         if (inventoryPage) inventoryPage.SetActive(false);
         if (defensePage) defensePage.SetActive(false);
+        if (targetsPage) targetsPage.SetActive(false);
+        if (activeMissionsPage) activeMissionsPage.SetActive(false);
     }
 }

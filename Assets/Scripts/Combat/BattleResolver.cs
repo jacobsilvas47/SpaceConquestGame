@@ -3,6 +3,15 @@ using System.Collections.Generic;
 
 public static class BattleResolver
 {
+    public static float GetTierDamageMultiplier(ShipTier attackerTier, ShipTier defenderTier)
+    {
+        int gap = (int)defenderTier - (int)attackerTier;
+
+        if (gap <= 0) return 1f;
+        if (gap == 1) return 0.5f;
+        if (gap == 2) return 0.2f;
+        return 0.05f;
+    }
     public static BattleResult Resolve(Fleet attacker, Fleet defender)
     {
         return Resolve(attacker, defender, null);

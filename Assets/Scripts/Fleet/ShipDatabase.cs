@@ -9,6 +9,8 @@ public static class ShipDatabase
             ShipType.Probe,
             new ShipData(
                 "Probe",
+                ShipTier.Light,
+                ShipRole.Logistics,
                 15,
                 0,
                 1,
@@ -28,6 +30,8 @@ public static class ShipDatabase
             ShipType.SmallCargo,
             new ShipData(
                 "Small Cargo",
+                ShipTier.Light,
+                ShipRole.Logistics,
                 120,
                 8,
                 8,
@@ -47,6 +51,8 @@ public static class ShipDatabase
             ShipType.LargeCargo,
             new ShipData(
                 "Large Cargo",
+                ShipTier.Light,
+                ShipRole.Logistics,
                 280,
                 12,
                 20,
@@ -66,6 +72,8 @@ public static class ShipDatabase
             ShipType.Freighter,
             new ShipData(
                 "Freighter",
+                ShipTier.Medium,
+                ShipRole.Logistics,
                 650,
                 20,
                 45,
@@ -85,6 +93,8 @@ public static class ShipDatabase
             ShipType.BasicFighter,
             new ShipData(
                 "Basic Fighter",
+                ShipTier.Light,
+                ShipRole.Combat,
                 100,
                 35,
                 10,
@@ -104,6 +114,8 @@ public static class ShipDatabase
             ShipType.Interceptor,
             new ShipData(
                 "Interceptor",
+                ShipTier.Light,
+                ShipRole.Combat,
                 130,
                 45,
                 18,
@@ -123,6 +135,8 @@ public static class ShipDatabase
             ShipType.LightFrigate,
             new ShipData(
                 "Light Frigate",
+                ShipTier.Medium,
+                ShipRole.Combat,
                 220,
                 65,
                 30,
@@ -142,6 +156,8 @@ public static class ShipDatabase
             ShipType.AssaultFighter,
             new ShipData(
                 "Assault Fighter",
+                ShipTier.Medium,
+                ShipRole.Combat,
                 260,
                 90,
                 45,
@@ -161,6 +177,8 @@ public static class ShipDatabase
             ShipType.SiegeFrigate,
             new ShipData(
                 "Siege Frigate",
+                ShipTier.Heavy,
+                ShipRole.Combat,
                 500,
                 160,
                 90,
@@ -180,6 +198,8 @@ public static class ShipDatabase
             ShipType.WarFrigate,
             new ShipData(
                 "War Frigate",
+                ShipTier.Heavy,
+                ShipRole.Combat,
                 700,
                 220,
                 120,
@@ -199,6 +219,8 @@ public static class ShipDatabase
             ShipType.Vanguard,
             new ShipData(
                 "Vanguard",
+                ShipTier.Heavy,
+                ShipRole.Combat,
                 1200,
                 340,
                 180,
@@ -218,6 +240,8 @@ public static class ShipDatabase
             ShipType.Titan,
             new ShipData(
                 "Titan",
+                ShipTier.Capital,
+                ShipRole.Combat,
                 1800,
                 500,
                 260,
@@ -237,6 +261,8 @@ public static class ShipDatabase
             ShipType.Dreadnought,
             new ShipData(
                 "Dreadnought",
+                ShipTier.Capital,
+                ShipRole.Combat,
                 3000,
                 800,
                 420,
@@ -256,6 +282,8 @@ public static class ShipDatabase
             ShipType.ColonyShip,
             new ShipData(
                 "Colony Ship",
+                ShipTier.Medium,
+                ShipRole.Logistics,
                 400,
                 15,
                 35,
@@ -275,6 +303,8 @@ public static class ShipDatabase
             ShipType.Salvager,
             new ShipData(
                 "Salvager",
+                ShipTier.Light,
+                ShipRole.Logistics,
                 220,
                 5,
                 20,
@@ -294,6 +324,8 @@ public static class ShipDatabase
             ShipType.ShieldShip,
             new ShipData(
                 "Shield Ship",
+                ShipTier.Heavy,
+                ShipRole.Support,
                 900,
                 40,
                 300,
@@ -313,6 +345,8 @@ public static class ShipDatabase
             ShipType.Bomber,
             new ShipData(
                 "Bomber",
+                ShipTier.Heavy,
+                ShipRole.Combat,
                 850,
                 420,
                 100,

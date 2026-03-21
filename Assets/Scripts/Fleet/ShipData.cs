@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public class ShipData
 {
     public string displayName;
+    public ShipTier tier;
+    public ShipRole role;
 
     public int maxHp;
     public int attack;
@@ -22,6 +24,8 @@ public class ShipData
 
     public ShipData(
         string displayName,
+        ShipTier tier,
+        ShipRole role,
         int maxHp,
         int attack,
         int defense,
@@ -34,6 +38,8 @@ public class ShipData
         List<Requirement> requirements = null)
     {
         this.displayName = displayName;
+        this.tier = tier;
+        this.role = role;
         this.maxHp = maxHp;
         this.attack = attack;
         this.defense = defense;

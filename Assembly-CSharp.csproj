@@ -65,6 +65,7 @@
     <Compile Include="Assets/Scripts/Requirements/RequirementUtility.cs" />
     <Compile Include="Assets/Scripts/Missions/AITargetSeeder.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark02.cs" />
+    <Compile Include="Assets/Scripts/Console/MissionConsolePanelUI.cs" />
     <Compile Include="Assets/Scripts/Defense/DefenseBuildPanelUI.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipCategory.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetCombatCalculator.cs" />
@@ -73,6 +74,7 @@
     <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeSystem.cs" />
     <Compile Include="Assets/Scripts/Managers/GameStateHolder.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipData.cs" />
+    <Compile Include="Assets/Scripts/Fleet/ShipTier.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_ExampleScript_01.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMPro_InstructionOverlay.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/VertexShakeB.cs" />
@@ -132,7 +134,6 @@
     <Compile Include="Assets/Scripts/Expeditions/FleetComposition.cs" />
     <Compile Include="Assets/Scripts/GamePlay/ResourceManager.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/CameraController.cs" />
-    <Compile Include="Assets/Scripts/Missions/MissionConsolePanelUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark03.cs" />
     <Compile Include="Assets/Scripts/UI/BuildMenuController.cs" />
     <Compile Include="Assets/Scripts/Defense/DefenseBuildRowUI.cs" />
@@ -154,6 +155,7 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextConsoleSimulator.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TeleType.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextEventCheck.cs" />
+    <Compile Include="Assets/Scripts/Fleet/ShipRole.cs" />
     <Compile Include="Assets/Scripts/Core/PlanetState.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionRules.cs" />
     <Compile Include="Assets/Scripts/Buildings/BuildingBalance.cs" />

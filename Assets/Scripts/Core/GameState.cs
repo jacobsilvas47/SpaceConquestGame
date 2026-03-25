@@ -8,6 +8,7 @@ public class GameState
     [Header("Expeditions")]
     public int expeditionSlotsUnlocked = 1;
     public double gameTime; // your “clock”, you can increment from a MonoBehaviour
+    public ResearchState research = new ResearchState();
 
     public Dictionary<string, PlanetState> planets = new Dictionary<string, PlanetState>();
     public Dictionary<string, Fleet> fleets = new Dictionary<string, Fleet>();

@@ -1,5 +1,6 @@
 public enum RequirementType
 {
+    // Buildings
     MetalRefinery,
     CrystalMine,
     GasExtractor,
@@ -7,6 +8,7 @@ public enum RequirementType
     Barracks,
     ResearchLab,
 
+    // Research
     LaserTech,
     ArmorTech,
     EngineTech

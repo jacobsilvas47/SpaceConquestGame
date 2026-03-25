@@ -94,9 +94,56 @@ public static class BattleResolver
         return 0.55f;
     }
 
+    private static float GetLossVulnerabilityMultiplier(ShipData data)
+    {
+        if (data == null) return 1f;
+
+        float roleMultiplier = GetRoleLossMultiplier(data.role);
+        float tierMultiplier = GetTierLossMultiplier(data.tier);
+
+        return roleMultiplier * tierMultiplier;
+    }
+
+    private static float GetRoleLossMultiplier(ShipRole role)
+    {
+        switch (role)
+        {
+            case ShipRole.Logistics:
+                return 1.6f;   // logistics die more easily
+
+            case ShipRole.Support:
+                return 0.9f;   // support slightly safer than average
+
+            case ShipRole.Combat:
+            default:
+                return 1f;
+        }
+    }
+
+    private static float GetTierLossMultiplier(ShipTier tier)
+    {
+        switch (tier)
+        {
+            case ShipTier.Light:
+                return 1.25f;  // light ships die easier
+
+            case ShipTier.Medium:
+                return 1f;
+
+            case ShipTier.Heavy:
+                return 0.55f;  // heavy ships resist losses
+
+            case ShipTier.Capital:
+                return 0.25f;  // capital ships are very hard to lose
+
+            default:
+                return 1f;
+        }
+    }
+
     private static void ApplyLosses(Fleet fleet, float lossPercent, BattleLosses losses)
     {
-        if (fleet == null) return;
+        if (fleet == null || fleet.ships == null) return;
 
         List<ShipType> shipTypes = new List<ShipType>(fleet.ships.Keys);
 
@@ -105,8 +152,22 @@ public static class BattleResolver
             int current = fleet.GetCount(type);
             if (current <= 0) continue;
 
-            int lost = Mathf.CeilToInt(current * lossPercent);
-            if (lost > current) lost = current;
+            ShipData data = ShipDatabase.Get(type);
+            if (data == null) continue;
+
+            float adjustedLossPercent = lossPercent * GetLossVulnerabilityMultiplier(data);
+
+            int lost = Mathf.FloorToInt(current * adjustedLossPercent);
+
+            // Only force a minimum loss for fragile ship classes when the loss percent is meaningful
+            if (lost == 0 && adjustedLossPercent >= 0.5f && current > 0)
+            {
+                if (data.role == ShipRole.Logistics || data.tier == ShipTier.Light)
+                    lost = 1;
+            }
+
+            if (lost > current)
+                lost = current;
 
             if (lost > 0)
             {

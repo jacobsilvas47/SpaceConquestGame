@@ -22,7 +22,8 @@ public static class ShipDatabase
                 50,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 },
+                    new Requirement { type = RequirementType.EngineTech, level = 1 }
                 }
             )
         },
@@ -43,7 +44,8 @@ public static class ShipDatabase
                 500,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 },
+                    new Requirement { type = RequirementType.EngineTech, level = 3 }
                 }
             )
         },
@@ -64,7 +66,8 @@ public static class ShipDatabase
                 1200,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 },
+                    new Requirement { type = RequirementType.EngineTech, level = 6 }
                 }
             )
         },
@@ -85,7 +88,9 @@ public static class ShipDatabase
                 5000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 },
+                    new Requirement { type = RequirementType.EngineTech, level = 12 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 8 }
                 }
             )
         },
@@ -106,7 +111,8 @@ public static class ShipDatabase
                 400,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 1 },
+                    new Requirement { type = RequirementType.LaserTech, level = 5 }
                 }
             )
         },
@@ -127,7 +133,9 @@ public static class ShipDatabase
                 900,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 },
+                    new Requirement { type = RequirementType.LaserTech, level = 10 },
+                    new Requirement { type = RequirementType.EngineTech, level = 8 }
                 }
             )
         },
@@ -148,7 +156,9 @@ public static class ShipDatabase
                 1500,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 },
+                    new Requirement { type = RequirementType.LaserTech, level = 18 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 12 }
                 }
             )
         },
@@ -169,7 +179,9 @@ public static class ShipDatabase
                 2500,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 },
+                    new Requirement { type = RequirementType.LaserTech, level = 28 },
+                    new Requirement { type = RequirementType.EngineTech, level = 18 }
                 }
             )
         },
@@ -190,7 +202,9 @@ public static class ShipDatabase
                 7000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 },
+                    new Requirement { type = RequirementType.LaserTech, level = 35 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 24 }
                 }
             )
         },
@@ -211,7 +225,10 @@ public static class ShipDatabase
                 11000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 5 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 5 },
+                    new Requirement { type = RequirementType.LaserTech, level = 45 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 35 },
+                    new Requirement { type = RequirementType.EngineTech, level = 24 }
                 }
             )
         },
@@ -232,7 +249,10 @@ public static class ShipDatabase
                 22000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 5 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 5 },
+                    new Requirement { type = RequirementType.LaserTech, level = 55 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 45 },
+                    new Requirement { type = RequirementType.EngineTech, level = 32 }
                 }
             )
         },
@@ -253,7 +273,10 @@ public static class ShipDatabase
                 35000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 6 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 6 },
+                    new Requirement { type = RequirementType.LaserTech, level = 70 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 60 },
+                    new Requirement { type = RequirementType.EngineTech, level = 45 }
                 }
             )
         },
@@ -274,7 +297,10 @@ public static class ShipDatabase
                 70000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 7 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 7 },
+                    new Requirement { type = RequirementType.LaserTech, level = 80 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 75 },
+                    new Requirement { type = RequirementType.EngineTech, level = 60 }
                 }
             )
         },
@@ -295,7 +321,9 @@ public static class ShipDatabase
                 8000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 },
+                    new Requirement { type = RequirementType.EngineTech, level = 10 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 6 }
                 }
             )
         },
@@ -316,7 +344,8 @@ public static class ShipDatabase
                 2500,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 2 },
+                    new Requirement { type = RequirementType.EngineTech, level = 8 }
                 }
             )
         },
@@ -337,7 +366,9 @@ public static class ShipDatabase
                 12000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 3 },
+                    new Requirement { type = RequirementType.ArmorTech, level = 22 },
+                    new Requirement { type = RequirementType.EngineTech, level = 14 }
                 }
             )
         },
@@ -358,23 +389,25 @@ public static class ShipDatabase
                 18000,
                 new List<Requirement>
                 {
-                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 }
+                    new Requirement { type = RequirementType.OrbitalShipworks, level = 4 },
+                    new Requirement { type = RequirementType.LaserTech, level = 40 },
+                    new Requirement { type = RequirementType.EngineTech, level = 20 }
                 }
             )
         }
     };
 
-        public static ShipData Get(ShipType type)
-        {
-            if (type == ShipType.None)
-                return null;
-
-            if (dataByType.TryGetValue(type, out var data))
-                return data;
-
-            Debug.LogWarning($"ShipDatabase: No data found for {type}");
+    public static ShipData Get(ShipType type)
+    {
+        if (type == ShipType.None)
             return null;
-        }
+
+        if (dataByType.TryGetValue(type, out var data))
+            return data;
+
+        Debug.LogWarning($"ShipDatabase: No data found for {type}");
+        return null;
+    }
 
     public static int CargoCapacity(ShipType type)
     {

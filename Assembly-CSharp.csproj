@@ -135,6 +135,7 @@
     <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeJob.cs" />
     <Compile Include="Assets/Scripts/Expeditions/FleetComposition.cs" />
     <Compile Include="Assets/Scripts/GamePlay/ResourceManager.cs" />
+    <Compile Include="Assets/Scripts/Data &amp; Research/ResearchPageUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/CameraController.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark03.cs" />
     <Compile Include="Assets/Scripts/UI/BuildMenuController.cs" />

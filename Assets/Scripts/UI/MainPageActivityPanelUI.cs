@@ -36,10 +36,12 @@ public class MainPageActivityPanelUI : MonoBehaviour
             return;
         }
 
-        RefreshBuildingRow(planet, state.gameTime);
-        RefreshShipRow(planet, state.gameTime);
-        RefreshResearchRow(state);
-        RefreshMissionRow(state, planet);
+        double gameTime = state.gameTime;
+
+        RefreshBuildingRow(planet, gameTime);
+        RefreshShipRow(planet, gameTime);
+        RefreshResearchRow(state, planet, gameTime);
+        RefreshMissionRow(state, planet, gameTime);
     }
 
     private void RefreshBuildingRow(PlanetState planet, double gameTime)
@@ -51,9 +53,12 @@ public class MainPageActivityPanelUI : MonoBehaviour
 
         if (job == null)
         {
+            Debug.Log("No active building upgrade found.");
             buildingRow.SetInactive("Building Upgrade", "No active upgrade");
             return;
         }
+
+        Debug.Log($"Building job found: {job.buildingType}, start={job.startTimeUtc}, complete={job.completeTimeUtc}, gameTime={gameTime}");
 
         double totalDuration = job.completeTimeUtc - job.startTimeUtc;
         double elapsed = gameTime - job.startTimeUtc;
@@ -64,7 +69,9 @@ public class MainPageActivityPanelUI : MonoBehaviour
             progress = (float)(elapsed / totalDuration);
 
         progress = Mathf.Clamp01(progress);
-        remaining = Math.Max(0, remaining);
+        remaining = Mathf.Max(0f, (float)remaining);
+
+        Debug.Log($"Building progress = {progress}, remaining = {remaining}");
 
         string detail = $"{job.buildingType} Lv {job.targetLevel - 1} → Lv {job.targetLevel}";
         string timeText = TimeFormatUtility.FormatDuration(remaining);
@@ -105,15 +112,15 @@ public class MainPageActivityPanelUI : MonoBehaviour
         shipRow.SetRow("Ship Production", detail, progress, timeText);
     }
 
-    private void RefreshResearchRow(GameState state)
-    {
-        if (researchRow == null)
-            return;
+private void RefreshResearchRow(GameState state, PlanetState planet, double gameTime)
+{
+    if (researchRow == null)
+        return;
 
-        researchRow.SetInactive("Research", "No active research");
-    }
+    researchRow.SetInactive("Research", "No active research");
+}
 
-    private void RefreshMissionRow(GameState state, PlanetState planet)
+    private void RefreshMissionRow(GameState state, PlanetState planet, double gameTime)
     {
         if (missionRow == null)
             return;

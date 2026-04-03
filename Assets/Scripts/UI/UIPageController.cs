@@ -2,69 +2,48 @@ using UnityEngine;
 
 public class UIController : MonoBehaviour
 {
+    [Header("Pages")]
+    [SerializeField] private GameObject mainPage;
+    [SerializeField] private GameObject buildPage;
+    [SerializeField] private GameObject fleetPage;
     [SerializeField] private GameObject targetsPage;
+    [SerializeField] private GameObject defensePage;
+    [SerializeField] private GameObject expeditionsPage;
+    [SerializeField] private GameObject inventoryPage;
+    [SerializeField] private GameObject consolePage;
     [SerializeField] private GameObject activeMissionsPage;
-    public GameObject mainPage;
-    public GameObject buildPage;
-    public GameObject fleetPage;
-    public GameObject expeditionsPage;
-    public GameObject consolePage;
-    public GameObject inventoryPage;
-    public GameObject defensePage;
+    [SerializeField] private GameObject researchPage;
 
-    public GameObject resourceHUD;
-
-    void SetResourceHUDVisible(bool visible)
+    private void HideAllPages()
     {
-        if (resourceHUD) resourceHUD.SetActive(visible);
+        if (mainPage != null) mainPage.SetActive(false);
+        if (buildPage != null) buildPage.SetActive(false);
+        if (fleetPage != null) fleetPage.SetActive(false);
+        if (targetsPage != null) targetsPage.SetActive(false);
+        if (defensePage != null) defensePage.SetActive(false);
+        if (expeditionsPage != null) expeditionsPage.SetActive(false);
+        if (inventoryPage != null) inventoryPage.SetActive(false);
+        if (consolePage != null) consolePage.SetActive(false);
+        if (activeMissionsPage != null) activeMissionsPage.SetActive(false);
+        if (researchPage != null) researchPage.SetActive(false);
     }
 
     public void OpenMainPage()
     {
         HideAllPages();
-        if (mainPage) mainPage.SetActive(true);
-        SetResourceHUDVisible(true);
+        if (mainPage != null) mainPage.SetActive(true);
     }
 
     public void OpenBuildPage()
     {
         HideAllPages();
-        if (buildPage) buildPage.SetActive(true);
-        SetResourceHUDVisible(true);
+        if (buildPage != null) buildPage.SetActive(true);
     }
 
     public void OpenFleetPage()
     {
         HideAllPages();
-        if (fleetPage) fleetPage.SetActive(true);
-        SetResourceHUDVisible(true);
-    }
-
-     public void OpenDefensePage()
-    {
-        HideAllPages();
-        if (defensePage) defensePage.SetActive(true);
-    }
-
-    public void OpenExpeditionsPage()
-    {
-        HideAllPages();
-        if (expeditionsPage) expeditionsPage.SetActive(true);
-        SetResourceHUDVisible(true);
-    }
-
-    public void OpenConsolePage()
-    {
-        HideAllPages();
-        if (consolePage) consolePage.SetActive(true);
-        SetResourceHUDVisible(false);
-    }
-
-    public void OpenInventoryPage()
-    {
-        HideAllPages();
-        if (inventoryPage) inventoryPage.SetActive(true);
-        SetResourceHUDVisible(false);
+        if (fleetPage != null) fleetPage.SetActive(true);
     }
 
     public void ShowTargetsPage()
@@ -73,22 +52,39 @@ public class UIController : MonoBehaviour
         if (targetsPage != null) targetsPage.SetActive(true);
     }
 
-    public void ShowActiveMissionsPage()
+    public void OpenDefensePage()
+    {
+        HideAllPages();
+        if (defensePage != null) defensePage.SetActive(true);
+    }
+
+    public void OpenExpeditionsPage()
+    {
+        HideAllPages();
+        if (expeditionsPage != null) expeditionsPage.SetActive(true);
+    }
+
+    public void OpenInventoryPage()
+    {
+        HideAllPages();
+        if (inventoryPage != null) inventoryPage.SetActive(true);
+    }
+
+    public void OpenConsolePage()
+    {
+        HideAllPages();
+        if (consolePage != null) consolePage.SetActive(true);
+    }
+
+    public void OpenResearchPage()
+    {
+        HideAllPages();
+        if (researchPage != null) researchPage.SetActive(true);
+    }
+
+    public void OpenActiveMissionsPage()
     {
         HideAllPages();
         if (activeMissionsPage != null) activeMissionsPage.SetActive(true);
-    }
-
-    void HideAllPages()
-    {
-        if (mainPage) mainPage.SetActive(false);
-        if (buildPage) buildPage.SetActive(false);
-        if (fleetPage) fleetPage.SetActive(false);
-        if (expeditionsPage) expeditionsPage.SetActive(false);
-        if (consolePage) consolePage.SetActive(false);
-        if (inventoryPage) inventoryPage.SetActive(false);
-        if (defensePage) defensePage.SetActive(false);
-        if (targetsPage) targetsPage.SetActive(false);
-        if (activeMissionsPage) activeMissionsPage.SetActive(false);
     }
 }

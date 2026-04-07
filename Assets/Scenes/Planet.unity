@@ -12139,7 +12139,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainPageActivityPanelUI
   gameStateHolder: {fileID: 794477818}
-  currentPlanetId: earth
+  currentPlanetId: home
   buildingRow: {fileID: 1283724848}
   shipRow: {fileID: 526738749}
   researchRow: {fileID: 542252728}
@@ -41382,8 +41382,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -66.23001, y: 0.000015258789}
-  m_SizeDelta: {x: -128.14001, y: 33}
+  m_AnchoredPosition: {x: 1.1699996, y: 0}
+  m_SizeDelta: {x: 21.219997, y: 34.08}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &753840845
 MonoBehaviour:
@@ -41405,8 +41405,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 3
+  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 0

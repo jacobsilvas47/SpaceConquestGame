@@ -21,30 +21,68 @@ public class MainPageActivityPanelUI : MonoBehaviour
 
     public void Refresh()
     {
-        if (gameStateHolder == null || gameStateHolder.state == null)
+        if (gameStateHolder == null)
         {
+            Debug.LogError("ActivityPanel: gameStateHolder is NULL");
+            SetAllUnavailable();
+            return;
+        }
+
+        if (gameStateHolder.state == null)
+        {
+            Debug.LogError("ActivityPanel: gameStateHolder.state is NULL");
             SetAllUnavailable();
             return;
         }
 
         GameState state = gameStateHolder.state;
+
+        Debug.Log($"ActivityPanel: currentPlanetId = {currentPlanetId}");
+
         PlanetState planet = state.GetPlanet(currentPlanetId);
 
         if (planet == null)
         {
+            Debug.LogError($"ActivityPanel: No planet found for id '{currentPlanetId}'");
             SetAllUnavailable();
             return;
         }
 
-        double gameTime = state.gameTime;
+        Debug.Log($"ActivityPanel: Found planet '{currentPlanetId}'");
+        Debug.Log($"ActivityPanel: activeBuildingUpgrade null? {planet.activeBuildingUpgrade == null}");
+        Debug.Log($"ActivityPanel: orbitalShipworksLevel = {planet.orbitalShipworksLevel}");
 
-        RefreshBuildingRow(planet, gameTime);
-        RefreshShipRow(planet, gameTime);
-        RefreshResearchRow(state, planet, gameTime);
-        RefreshMissionRow(state, planet, gameTime);
+        double nowUtc = GetNowUtcSeconds();
+
+        RefreshBuildingRow(planet, nowUtc);
+        RefreshShipRow(planet, nowUtc);
+        RefreshResearchRow(state, planet, nowUtc);
+        RefreshMissionRow(state, planet, nowUtc);
     }
 
-    private void RefreshBuildingRow(PlanetState planet, double gameTime)
+    private double GetNowUtcSeconds()
+    {
+        return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    }
+
+    private float CalculateProgress(double startUtc, double endUtc, double nowUtc)
+    {
+        double totalDuration = endUtc - startUtc;
+        if (totalDuration <= 0)
+            return 0f;
+
+        double elapsed = nowUtc - startUtc;
+        elapsed = Math.Max(0, elapsed);
+
+        return Mathf.Clamp01((float)(elapsed / totalDuration));
+    }
+
+    private double CalculateRemaining(double endUtc, double nowUtc)
+    {
+        return Math.Max(0, endUtc - nowUtc);
+    }
+
+    private void RefreshBuildingRow(PlanetState planet, double nowUtc)
     {
         if (buildingRow == null)
             return;
@@ -58,18 +96,10 @@ public class MainPageActivityPanelUI : MonoBehaviour
             return;
         }
 
-        Debug.Log($"Building job found: {job.buildingType}, start={job.startTimeUtc}, complete={job.completeTimeUtc}, gameTime={gameTime}");
+        Debug.Log($"Building job found: {job.buildingType}, start={job.startTimeUtc}, complete={job.completeTimeUtc}, nowUtc={nowUtc}");
 
-        double totalDuration = job.completeTimeUtc - job.startTimeUtc;
-        double elapsed = gameTime - job.startTimeUtc;
-        double remaining = job.completeTimeUtc - gameTime;
-
-        float progress = 0f;
-        if (totalDuration > 0)
-            progress = (float)(elapsed / totalDuration);
-
-        progress = Mathf.Clamp01(progress);
-        remaining = Mathf.Max(0f, (float)remaining);
+        float progress = CalculateProgress(job.startTimeUtc, job.completeTimeUtc, nowUtc);
+        double remaining = CalculateRemaining(job.completeTimeUtc, nowUtc);
 
         Debug.Log($"Building progress = {progress}, remaining = {remaining}");
 
@@ -79,7 +109,7 @@ public class MainPageActivityPanelUI : MonoBehaviour
         buildingRow.SetRow("Building Upgrade", detail, progress, timeText);
     }
 
-    private void RefreshShipRow(PlanetState planet, double gameTime)
+    private void RefreshShipRow(PlanetState planet, double nowUtc)
     {
         if (shipRow == null)
             return;
@@ -95,16 +125,14 @@ public class MainPageActivityPanelUI : MonoBehaviour
 
         string shipName = data != null ? data.displayName : item.shipType.ToString();
 
-        double finishTime = item.finishTime;
-        double remaining = finishTime - gameTime;
-
+        double finishUtc = item.finishTime;
         double buildTime = data != null ? data.buildTimeSeconds : 1.0;
-        double startTime = finishTime - buildTime;
-        double elapsed = gameTime - startTime;
+        double startUtc = finishUtc - buildTime;
 
-        float progress = 0f;
-        if (buildTime > 0)
-            progress = (float)(elapsed / buildTime);
+        float progress = CalculateProgress(startUtc, finishUtc, nowUtc);
+        double remaining = CalculateRemaining(finishUtc, nowUtc);
+
+        Debug.Log($"Ship progress = {progress}, remaining = {remaining}, finishUtc = {finishUtc}, nowUtc = {nowUtc}");
 
         string detail = shipName;
         string timeText = TimeFormatUtility.FormatDuration(remaining);
@@ -112,15 +140,15 @@ public class MainPageActivityPanelUI : MonoBehaviour
         shipRow.SetRow("Ship Production", detail, progress, timeText);
     }
 
-private void RefreshResearchRow(GameState state, PlanetState planet, double gameTime)
-{
-    if (researchRow == null)
-        return;
+    private void RefreshResearchRow(GameState state, PlanetState planet, double nowUtc)
+    {
+        if (researchRow == null)
+            return;
 
-    researchRow.SetInactive("Research", "No active research");
-}
+        researchRow.SetInactive("Research", "No active research");
+    }
 
-    private void RefreshMissionRow(GameState state, PlanetState planet, double gameTime)
+    private void RefreshMissionRow(GameState state, PlanetState planet, double nowUtc)
     {
         if (missionRow == null)
             return;
@@ -148,7 +176,8 @@ private void RefreshResearchRow(GameState state, PlanetState planet, double game
             return;
         }
 
-        missionRow.SetRow("Missions", $"{activeCount} active", 1f, "In progress");
+        // Still text-only for now until mission timing fields are wired in.
+        missionRow.SetRow("Missions", $"{activeCount} active", 0f, "In progress");
     }
 
     private void SetAllUnavailable()

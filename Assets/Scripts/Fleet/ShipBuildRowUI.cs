@@ -16,82 +16,93 @@ public class ShipBuildRowUI : MonoBehaviour
     public TextMeshProUGUI requirementText;
     public TMP_InputField amountInput;
     public Button buildButton;
+    public Button infoButton;
 
     [Header("Refs")]
     public GameStateHolder gameStateHolder;
     public string planetId = "home";
     public ResourceManager resourceManager;
+    public ShipRequirementsPopupUI requirementsPopup;
+
+    private float nextRefresh;
 
     private void Start()
     {
         Refresh();
 
         if (buildButton != null)
+        {
+            buildButton.onClick.RemoveAllListeners();
             buildButton.onClick.AddListener(OnBuildClicked);
+        }
+
+        if (infoButton != null)
+        {
+            infoButton.onClick.RemoveAllListeners();
+            infoButton.onClick.AddListener(OnInfoClicked);
+        }
     }
 
-        public void Refresh()
+    private void OnEnable()
+    {
+        Refresh();
+    }
+
+    private void Update()
+    {
+        if (Time.unscaledTime < nextRefresh) return;
+        nextRefresh = Time.unscaledTime + 0.25f;
+        Refresh();
+    }
+
+    public void Refresh()
+    {
+        var ship = ShipDatabase.Get(shipType);
+        if (ship == null) return;
+
+        if (nameText)
+            nameText.text = ship.displayName;
+
+        if (costText)
         {
-            var ship = ShipDatabase.Get(shipType);
-            if (ship == null) return;
-
-            if (nameText)
-                nameText.text = ship.displayName;
-
-            if (costText)
-            {
-                costText.text =
-                    $"Cost: {NumberFormatter.Format(ship.metalCost)} M, " +
-                    $"{NumberFormatter.Format(ship.crystalCost)} C, " +
-                    $"{NumberFormatter.Format(ship.gasCost)} G";
-            }
-
-            int owned = 0;
-            bool requirementsMet = false;
-
-            if (gameStateHolder != null && gameStateHolder.state != null)
-            {
-                owned = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
-
-                requirementsMet = RequirementUtility.MeetsRequirements(
-                    gameStateHolder.state,
-                    planetId,
-                    ship.requirements
-                );
-            }
-
-            if (ownedText)
-                ownedText.text = $"Owned: {NumberFormatter.Format(owned)}";
-
-            if (canBuildText && resourceManager != null)
-            {
-                int maxBuildable = resourceManager.GetMaxBuildableShips(shipType);
-                canBuildText.text = $"Can Build: {NumberFormatter.Format(maxBuildable)}";
-            }
-
-            if (buildButton != null)
-                buildButton.interactable = requirementsMet;
-
-            if (requirementText != null)
-            {
-                requirementText.text = "";
-                requirementText.gameObject.SetActive(false);
-            }
+            costText.text =
+                $"Cost: {NumberFormatter.Format(ship.metalCost)} M, " +
+                $"{NumberFormatter.Format(ship.crystalCost)} C, " +
+                $"{NumberFormatter.Format(ship.gasCost)} G";
         }
 
-        private void OnEnable()
+        int owned = 0;
+        bool requirementsMet = false;
+
+        if (gameStateHolder != null && gameStateHolder.state != null)
         {
-            Refresh();
+            owned = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
+
+            requirementsMet = RequirementUtility.MeetsRequirements(
+                gameStateHolder.state,
+                planetId,
+                ship.requirements
+            );
         }
 
-        private float nextRefresh;
+        if (ownedText)
+            ownedText.text = $"Owned: {NumberFormatter.Format(owned)}";
 
-        private void Update()
+        if (canBuildText && resourceManager != null)
         {
-            if (Time.unscaledTime < nextRefresh) return;
-            nextRefresh = Time.unscaledTime + 0.25f;
-            Refresh();
+            int maxBuildable = resourceManager.GetMaxBuildableShips(shipType);
+            canBuildText.text = $"Can Build: {NumberFormatter.Format(maxBuildable)}";
         }
+
+        if (buildButton != null)
+            buildButton.interactable = requirementsMet;
+
+        if (requirementText != null)
+        {
+            requirementText.text = "";
+            requirementText.gameObject.SetActive(false);
+        }
+    }
 
     private void OnBuildClicked()
     {
@@ -120,6 +131,17 @@ public class ShipBuildRowUI : MonoBehaviour
             amountInput.text = "";
             Refresh();
         }
+    }
+
+    private void OnInfoClicked()
+    {
+        if (requirementsPopup == null)
+        {
+            Debug.LogWarning($"[ShipBuildRowUI] Requirements popup is not assigned for {shipType}");
+            return;
+        }
+
+        requirementsPopup.ShowForShip(shipType);
     }
 
     public int GetRequestedAmount()

@@ -73,6 +73,7 @@
     <Compile Include="Assets/Scripts/Fleet/FleetCombatCalculator.cs" />
     <Compile Include="Assets/Scripts/Inventory/UI/InventoryPanelUI.cs" />
     <Compile Include="Assets/Scripts/Items/ItemRarityUtility.cs" />
+    <Compile Include="Assets/Scripts/Fleet/ShipRequirementsPopupUI.cs" />
     <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeSystem.cs" />
     <Compile Include="Assets/Scripts/Managers/GameStateHolder.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipData.cs" />

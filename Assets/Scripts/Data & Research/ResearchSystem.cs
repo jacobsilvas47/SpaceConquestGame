@@ -79,6 +79,12 @@ public static class ResearchSystem
                 multiplier = 1.35f;
                 return;
 
+            case ResearchType.EngineTech:
+                baseMetal = 125f;
+                baseCrystal = 75f;
+                multiplier = 1.38f;
+                return;
+
             case ResearchType.WeaponSystems:
                 baseMetal = 150f;
                 baseCrystal = 100f;

@@ -23,6 +23,11 @@ public class ResearchPageUI : MonoBehaviour
     public TMP_Text defenseCostText;
     public Button defenseButton;
 
+    [Header("Engine Tech")]
+    public TMP_Text engineTechLevelText;
+    public TMP_Text engineTechCostText;
+    public Button engineTechButton;
+
     private void OnEnable()
     {
         Refresh();
@@ -36,6 +41,7 @@ public class ResearchPageUI : MonoBehaviour
         int engineeringLevel = state.research.GetLevel(ResearchType.Engineering);
         int weaponLevel = state.research.GetLevel(ResearchType.WeaponSystems);
         int defenseLevel = state.research.GetLevel(ResearchType.DefenseSystems);
+        int engineTechLevel = state.research.GetLevel(ResearchType.EngineTech);
 
         if (engineeringLevelText != null)
             engineeringLevelText.text = $"Engineering Lv {engineeringLevel}";
@@ -45,6 +51,9 @@ public class ResearchPageUI : MonoBehaviour
 
         if (defenseLevelText != null)
             defenseLevelText.text = $"Defense Systems Lv {defenseLevel}";
+
+        if (engineTechLevelText != null)
+            engineTechLevelText.text = $"Engine Tech Lv {engineTechLevel}";
 
         if (engineeringCostText != null)
             engineeringCostText.text =
@@ -57,6 +66,10 @@ public class ResearchPageUI : MonoBehaviour
         if (defenseCostText != null)
             defenseCostText.text =
                 $"Metal: {Mathf.FloorToInt((float)ResearchSystem.GetMetalCost(state, ResearchType.DefenseSystems))}  Crystal: {Mathf.FloorToInt((float)ResearchSystem.GetCrystalCost(state, ResearchType.DefenseSystems))}";
+
+        if (engineTechCostText != null)
+            engineTechCostText.text =
+                $"Metal: {Mathf.FloorToInt((float)ResearchSystem.GetMetalCost(state, ResearchType.EngineTech))}  Crystal: {Mathf.FloorToInt((float)ResearchSystem.GetCrystalCost(state, ResearchType.EngineTech))}";
 
         PlanetState planet = state.GetPlanet(planetId);
         if (planet != null)
@@ -75,6 +88,11 @@ public class ResearchPageUI : MonoBehaviour
                 defenseButton.interactable =
                     planet.metal >= ResearchSystem.GetMetalCost(state, ResearchType.DefenseSystems) &&
                     planet.crystal >= ResearchSystem.GetCrystalCost(state, ResearchType.DefenseSystems);
+
+            if (engineTechButton != null)
+                engineTechButton.interactable =
+                    planet.metal >= ResearchSystem.GetMetalCost(state, ResearchType.EngineTech) &&
+                    planet.crystal >= ResearchSystem.GetCrystalCost(state, ResearchType.EngineTech);
         }
     }
 
@@ -91,6 +109,11 @@ public class ResearchPageUI : MonoBehaviour
     public void OnClickUpgradeDefenseSystems()
     {
         TryUpgrade(ResearchType.DefenseSystems);
+    }
+
+    public void OnClickUpgradeEngineTech()
+    {
+        TryUpgrade(ResearchType.EngineTech);
     }
 
     private void TryUpgrade(ResearchType type)

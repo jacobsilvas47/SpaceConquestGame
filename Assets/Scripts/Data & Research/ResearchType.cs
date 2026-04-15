@@ -5,5 +5,6 @@ public enum ResearchType
     WeaponSystems,
     DefenseSystems,
     Engineering,
+    EngineTech,
     ShieldTech
 }

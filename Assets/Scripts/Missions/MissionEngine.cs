@@ -57,11 +57,13 @@ public static class MissionEngine
         mission.cargoCapacity = cap;
 
         double tierDurationMultiplier = ExpeditionRules.GetDurationMultiplier(mission.tier);
+        double speedMult = ResearchBonuses.GetFleetSpeedMultiplier(state);
+        double adjustedDuration = (durationSeconds * tierDurationMultiplier) / speedMult;
 
         double now = state.gameTime;
         mission.departTime = now;
-        mission.arriveTime = now + (durationSeconds * tierDurationMultiplier);
-        mission.returnTime = now + (durationSeconds * 2.0 * tierDurationMultiplier);
+        mission.arriveTime = now + adjustedDuration;
+        mission.returnTime = now + (adjustedDuration * 2.0);
 
         state.missions.Add(mission);
 
@@ -110,12 +112,15 @@ public static class MissionEngine
             fleetId
         );
 
-mission.targetType = targetType;
+        mission.targetType = targetType;
+
+        double speedMult = ResearchBonuses.GetFleetSpeedMultiplier(state);
+        double adjustedDuration = durationSeconds / speedMult;
 
         double now = state.gameTime;
         mission.departTime = now;
-        mission.arriveTime = now + durationSeconds;
-        mission.returnTime = now + (durationSeconds * 2.0);
+        mission.arriveTime = now + adjustedDuration;
+        mission.returnTime = now + (adjustedDuration * 2.0);
 
         state.missions.Add(mission);
 
@@ -126,83 +131,83 @@ mission.targetType = targetType;
     // Advances mission statuses based on current gameTime
     public static void UpdateMissions(GameState state)
     {
-    if (state == null) return;
+        if (state == null) return;
 
-    double now = state.gameTime;
+        double now = state.gameTime;
 
-    for (int i = 0; i < state.missions.Count; i++)
-    {
-        Mission m = state.missions[i];
-        if (m == null) continue;
-
-        // Completed or failed missions do nothing
-        if (m.status == MissionStatus.Completed || m.status == MissionStatus.Failed)
-            continue;
-
-        // En route → Arrived
-        if (m.status == MissionStatus.EnRoute && now >= m.arriveTime)
+        for (int i = 0; i < state.missions.Count; i++)
         {
-            m.status = MissionStatus.Arrived;
-        }
+            Mission m = state.missions[i];
+            if (m == null) continue;
 
-        // Arrived → resolve based on mission type
-        if (m.status == MissionStatus.Arrived)
-        {
-            switch (m.missionType)
+            // Completed or failed missions do nothing
+            if (m.status == MissionStatus.Completed || m.status == MissionStatus.Failed)
+                continue;
+
+            // En route → Arrived
+            if (m.status == MissionStatus.EnRoute && now >= m.arriveTime)
             {
-                case MissionType.Expedition:
-                    m.status = MissionStatus.Returning;
-                    break;
-
-                case MissionType.Attack:
-                    ResolveAttack(state, m);
-
-                    Fleet attackFleet = state.GetFleet(m.fleetId);
-                    if (attackFleet != null && !attackFleet.IsEmpty())
-                        m.status = MissionStatus.Returning;
-                    else
-                        m.status = MissionStatus.Completed;
-
-                    break;
-
-                case MissionType.Transport:
-                    m.status = MissionStatus.Returning;
-                    break;
-
-                case MissionType.Deploy:
-                    m.status = MissionStatus.Returning;
-                    break;
-
-                case MissionType.Spy:
-                    m.status = MissionStatus.Returning;
-                    break;
-
-                case MissionType.Harvest:
-                    m.status = MissionStatus.Returning;
-                    break;
+                m.status = MissionStatus.Arrived;
             }
-        }
 
-        // Returning → Completed
-        if (m.status == MissionStatus.Returning && now >= m.returnTime)
-        {
-            // Resolve expedition rewards once
-        if (m is ExpeditionMission exp && !exp.resolved)
-        {
-            ExpeditionResolver.Resolve(state, exp);
+            // Arrived → resolve based on mission type
+            if (m.status == MissionStatus.Arrived)
+            {
+                switch (m.missionType)
+                {
+                    case MissionType.Expedition:
+                        m.status = MissionStatus.Returning;
+                        break;
 
-            if (string.IsNullOrEmpty(exp.resultText))
-                exp.resultText = exp.outcomeSummary;
+                    case MissionType.Attack:
+                        ResolveAttack(state, m);
 
-            AddExpeditionLog(state, exp);
-            AddExpeditionMissionReport(state, exp);
-        }
+                        Fleet attackFleet = state.GetFleet(m.fleetId);
+                        if (attackFleet != null && !attackFleet.IsEmpty())
+                            m.status = MissionStatus.Returning;
+                        else
+                            m.status = MissionStatus.Completed;
 
-            // Return fleet ships to origin planet
-            FleetReturner.ReturnFleetToOrigin(state, m.fleetId);
+                        break;
 
-            // Finally mark mission complete
-            m.status = MissionStatus.Completed;
+                    case MissionType.Transport:
+                        m.status = MissionStatus.Returning;
+                        break;
+
+                    case MissionType.Deploy:
+                        m.status = MissionStatus.Returning;
+                        break;
+
+                    case MissionType.Spy:
+                        m.status = MissionStatus.Returning;
+                        break;
+
+                    case MissionType.Harvest:
+                        m.status = MissionStatus.Returning;
+                        break;
+                }
+            }
+
+            // Returning → Completed
+            if (m.status == MissionStatus.Returning && now >= m.returnTime)
+            {
+                // Resolve expedition rewards once
+                if (m is ExpeditionMission exp && !exp.resolved)
+                {
+                    ExpeditionResolver.Resolve(state, exp);
+
+                    if (string.IsNullOrEmpty(exp.resultText))
+                        exp.resultText = exp.outcomeSummary;
+
+                    AddExpeditionLog(state, exp);
+                    AddExpeditionMissionReport(state, exp);
+                }
+
+                // Return fleet ships to origin planet
+                FleetReturner.ReturnFleetToOrigin(state, m.fleetId);
+
+                // Finally mark mission complete
+                m.status = MissionStatus.Completed;
             }
         }
     }
@@ -268,33 +273,33 @@ mission.targetType = targetType;
         Debug.Log($"[PLUNDER] Took {metalTaken} metal, {crystalTaken} crystal, {gasTaken} gas.");
     }
 
-        private static void ResolveAttack(GameState state, Mission mission)
+    private static void ResolveAttack(GameState state, Mission mission)
+    {
+        if (state == null || mission == null)
+            return;
+
+        Fleet attacker = state.GetFleet(mission.fleetId);
+        if (attacker == null)
         {
-            if (state == null || mission == null)
-                return;
-
-            Fleet attacker = state.GetFleet(mission.fleetId);
-            if (attacker == null)
-            {
-                Debug.LogWarning($"ResolveAttack: attacker fleet '{mission.fleetId}' not found.");
-                return;
-            }
-
-            switch (mission.targetType)
-            {
-                case TargetType.PlayerPlanet:
-                    ResolveAttackVsPlayerPlanet(state, mission);
-                    break;
-
-                case TargetType.AITarget:
-                    ResolveAttackVsAITarget(state, mission);
-                    break;
-
-                default:
-                    Debug.LogWarning($"ResolveAttack: unsupported target type {mission.targetType}");
-                    break;
-            }
+            Debug.LogWarning($"ResolveAttack: attacker fleet '{mission.fleetId}' not found.");
+            return;
         }
+
+        switch (mission.targetType)
+        {
+            case TargetType.PlayerPlanet:
+                ResolveAttackVsPlayerPlanet(state, mission);
+                break;
+
+            case TargetType.AITarget:
+                ResolveAttackVsAITarget(state, mission);
+                break;
+
+            default:
+                Debug.LogWarning($"ResolveAttack: unsupported target type {mission.targetType}");
+                break;
+        }
+    }
 
     private static void ResolveAttackVsPlayerPlanet(GameState state, Mission mission)
     {
@@ -365,62 +370,62 @@ mission.targetType = targetType;
         Debug.Log($"[ATTACK] AI target battle resolved. AttackerWon={result.attackerWon}, Target={aiTarget.displayName}");
     }
 
-        private static void ApplyBattleLossesVsAITarget(Fleet attacker, AttackTarget aiTarget, BattleResult result)
+    private static void ApplyBattleLossesVsAITarget(Fleet attacker, AttackTarget aiTarget, BattleResult result)
+    {
+        if (attacker != null && result.attackerLosses != null)
         {
-            if (attacker != null && result.attackerLosses != null)
+            foreach (var loss in result.attackerLosses.lostShips)
             {
-                foreach (var loss in result.attackerLosses.lostShips)
-                {
-                    attacker.RemoveShips(loss.Key, loss.Value);
-                }
-            }
-
-            if (aiTarget != null && aiTarget.defendingFleet != null && result.defenderLosses != null)
-            {
-                foreach (var loss in result.defenderLosses.lostShips)
-                {
-                    aiTarget.defendingFleet.RemoveShips(loss.Key, loss.Value);
-                }
+                attacker.RemoveShips(loss.Key, loss.Value);
             }
         }
 
-        private static void ApplyPlunderVsAITarget(Fleet attacker, AttackTarget aiTarget)
+        if (aiTarget != null && aiTarget.defendingFleet != null && result.defenderLosses != null)
         {
-            if (attacker == null || aiTarget == null)
-                return;
+            foreach (var loss in result.defenderLosses.lostShips)
+            {
+                aiTarget.defendingFleet.RemoveShips(loss.Key, loss.Value);
+            }
+        }
+    }
 
-            int usedCargo = attacker.cargoMetal + attacker.cargoCrystal + attacker.cargoGas;
-            int freeCargo = Mathf.Max(0, attacker.TotalCargo() - usedCargo);
+    private static void ApplyPlunderVsAITarget(Fleet attacker, AttackTarget aiTarget)
+    {
+        if (attacker == null || aiTarget == null)
+            return;
 
-            if (freeCargo <= 0)
-                return;
+        int usedCargo = attacker.cargoMetal + attacker.cargoCrystal + attacker.cargoGas;
+        int freeCargo = Mathf.Max(0, attacker.TotalCargo() - usedCargo);
 
-            double plunderMetal = aiTarget.metal * 0.5;
-            double plunderCrystal = aiTarget.crystal * 0.5;
-            double plunderGas = aiTarget.gas * 0.5;
+        if (freeCargo <= 0)
+            return;
 
-            double totalAvailable = plunderMetal + plunderCrystal + plunderGas;
-            if (totalAvailable <= 0)
-                return;
+        double plunderMetal = aiTarget.metal * 0.5;
+        double plunderCrystal = aiTarget.crystal * 0.5;
+        double plunderGas = aiTarget.gas * 0.5;
 
-            double totalTaken = Math.Min(freeCargo, totalAvailable);
-            double ratio = totalTaken / totalAvailable;
+        double totalAvailable = plunderMetal + plunderCrystal + plunderGas;
+        if (totalAvailable <= 0)
+            return;
 
-            int metalTaken = Mathf.FloorToInt((float)(plunderMetal * ratio));
-            int crystalTaken = Mathf.FloorToInt((float)(plunderCrystal * ratio));
-            int gasTaken = Mathf.FloorToInt((float)(plunderGas * ratio));
+        double totalTaken = Math.Min(freeCargo, totalAvailable);
+        double ratio = totalTaken / totalAvailable;
 
-            aiTarget.metal -= metalTaken;
-            aiTarget.crystal -= crystalTaken;
-            aiTarget.gas -= gasTaken;
+        int metalTaken = Mathf.FloorToInt((float)(plunderMetal * ratio));
+        int crystalTaken = Mathf.FloorToInt((float)(plunderCrystal * ratio));
+        int gasTaken = Mathf.FloorToInt((float)(plunderGas * ratio));
 
-            attacker.cargoMetal += metalTaken;
-            attacker.cargoCrystal += crystalTaken;
-            attacker.cargoGas += gasTaken;
+        aiTarget.metal -= metalTaken;
+        aiTarget.crystal -= crystalTaken;
+        aiTarget.gas -= gasTaken;
 
-            Debug.Log($"[PLUNDER AI] Took {metalTaken} metal, {crystalTaken} crystal, {gasTaken} gas from {aiTarget.displayName}");
-        }   
- 
+        attacker.cargoMetal += metalTaken;
+        attacker.cargoCrystal += crystalTaken;
+        attacker.cargoGas += gasTaken;
+
+        Debug.Log($"[PLUNDER AI] Took {metalTaken} metal, {crystalTaken} crystal, {gasTaken} gas from {aiTarget.displayName}");
+    }
+
     private static void AddAttackMissionReport(
         GameState state,
         Mission mission,
@@ -549,53 +554,53 @@ mission.targetType = targetType;
         Debug.Log($"[MissionReport] missionReports now = {state.missionReports.Count}");
     }
 
-        private static void AddExpeditionMissionReport(GameState state, ExpeditionMission exp)
+    private static void AddExpeditionMissionReport(GameState state, ExpeditionMission exp)
+    {
+        if (state == null || exp == null)
+            return;
+
+        string summary = exp.resultText;
+        if (string.IsNullOrEmpty(summary))
+            summary = exp.outcomeSummary;
+        if (string.IsNullOrEmpty(summary))
+            summary = "Expedition complete.";
+
+        MissionReport report = new MissionReport(
+            MissionType.Expedition,
+            "Expedition Report",
+            summary,
+            summary,
+            exp.originPlanetId,
+            exp.targetId,
+            "Deep Space",
+            state.gameTime,
+            true
+        );
+
+        state.AddMissionReport(report);
+    }
+
+    private static void AppendFleetContents(System.Text.StringBuilder sb, Fleet fleet)
+    {
+        if (sb == null || fleet == null)
+            return;
+
+        bool wroteAnything = false;
+
+        foreach (ShipType type in System.Enum.GetValues(typeof(ShipType)))
         {
-            if (state == null || exp == null)
-                return;
+            int amount = fleet.GetCount(type);
+            if (amount <= 0) continue;
 
-            string summary = exp.resultText;
-            if (string.IsNullOrEmpty(summary))
-                summary = exp.outcomeSummary;
-            if (string.IsNullOrEmpty(summary))
-                summary = "Expedition complete.";
-
-            MissionReport report = new MissionReport(
-                MissionType.Expedition,
-                "Expedition Report",
-                summary,
-                summary,
-                exp.originPlanetId,
-                exp.targetId,
-                "Deep Space",
-                state.gameTime,
-                true
-            );
-
-            state.AddMissionReport(report);
+            wroteAnything = true;
+            sb.AppendLine($"{amount} {type}");
         }
 
-        private static void AppendFleetContents(System.Text.StringBuilder sb, Fleet fleet)
-        {
-            if (sb == null || fleet == null)
-                return;
+        if (!wroteAnything)
+            sb.AppendLine("None");
+    }
 
-            bool wroteAnything = false;
-
-            foreach (ShipType type in System.Enum.GetValues(typeof(ShipType)))
-            {
-                int amount = fleet.GetCount(type);
-                if (amount <= 0) continue;
-
-                wroteAnything = true;
-                sb.AppendLine($"{amount} {type}");
-            }
-
-            if (!wroteAnything)
-                sb.AppendLine("None");
-        }
-
-       private static void AddExpeditionLog(GameState state, ExpeditionMission exp)
+    private static void AddExpeditionLog(GameState state, ExpeditionMission exp)
     {
         if (state.expeditionLog == null)
             state.expeditionLog = new List<ExpeditionLogEntry>();
@@ -617,13 +622,13 @@ mission.targetType = targetType;
             crystalGained = exp.rewardCrystal,
             gasGained = exp.rewardGas,
 
-            // ✅ This is what the console should display
+            // This is what the console should display
             summaryText = summary
         };
 
         if (exp.itemsFound != null && exp.itemsFound.Count > 0)
             entry.itemsGained.AddRange(exp.itemsFound);
 
-            state.expeditionLog.Add(entry);
+        state.expeditionLog.Add(entry);
     }
 }

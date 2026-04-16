@@ -168,6 +168,7 @@
     <Compile Include="Assets/Scripts/Buildings/BuildingBalance.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionCombatResolver.cs" />
     <Compile Include="Assets/Scripts/Buildings/BuildingUpgradeFormula.cs" />
+    <Compile Include="Assets/Scripts/Data &amp; Research/ResearchBonuses.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextMeshProFloatingText.cs" />
     <Compile Include="Assets/Scripts/Debug/PirateEncounterTest.cs" />
     <Compile Include="Assets/Scripts/AITargetUI/AITagetRowUI.cs" />

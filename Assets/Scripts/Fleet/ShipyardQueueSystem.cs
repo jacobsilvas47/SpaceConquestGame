@@ -61,10 +61,12 @@ public static class ShipyardQueueSystem
             startTime = Math.Max(Time.time, lastFinish);
         }
 
+        double buildTime = shipData.buildTimeSeconds * ResearchBonuses.GetBuildTimeMultiplier(state);
+
         planet.shipQueue.Add(new ShipQueueItem
         {
             shipType = shipType,
-            finishTime = startTime + shipData.buildTimeSeconds
+            finishTime = startTime + buildTime
         });
 
         return true;

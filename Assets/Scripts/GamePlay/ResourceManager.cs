@@ -1263,15 +1263,17 @@ public class ResourceManager : MonoBehaviour
             startTime = System.Math.Max(Time.time, lastFinish);
         }
 
+        double buildTime = ShipBuildTimeSeconds * ResearchBonuses.GetBuildTimeMultiplier(gameStateHolder.state);
+
         for (int i = 0; i < amount; i++)
         {
             p.shipQueue.Add(new ShipQueueItem
             {
                 shipType = shipType,
-                finishTime = startTime + ShipBuildTimeSeconds
+                finishTime = startTime + buildTime
             });
 
-            startTime += ShipBuildTimeSeconds;
+            startTime += buildTime;
         }
     }
 

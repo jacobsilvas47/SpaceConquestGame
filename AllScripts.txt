@@ -873,3 +873,2999 @@ namespace Unity.PerformanceTesting
 ====================================
 ./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Attributes/VersionAttribute.cs
 ====================================
+using System;
+using NUnit.Framework;
+using NUnit.Framework.Interfaces;
+using NUnit.Framework.Internal;
+
+namespace Unity.PerformanceTesting
+{
+    /// <summary>
+    /// Test attribute to specify test version.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    public class VersionAttribute : NUnitAttribute, IApplyToTest
+    {
+        /// <summary>
+        /// Test version.
+        /// </summary>
+        public string Version { get; }
+
+        /// <summary>
+        /// Adds attribute to specify test version.
+        /// </summary>
+        /// <param name="version">Version of the test.</param>
+        public VersionAttribute(string version)
+        {
+            Version = version;
+        }
+
+        /// <summary>
+        /// Used by NUnit to apply version to properties.
+        /// </summary>
+        /// <param name="test">An NUnit test to apply the version property to.</param>
+        public void ApplyToTest(Test test)
+        {
+            test.Properties.Add("Version", this);
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Attributes/RequiredMemberAttribute.cs
+====================================
+namespace Unity.PerformanceTesting
+{
+    internal class RequiredMemberAttribute
+#if UNITY_2021_1_OR_NEWER
+        : UnityEngine.Scripting.RequiredMemberAttribute
+#else
+        : System.Attribute
+#endif
+    {
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Meters/IStopWatch.cs
+====================================
+namespace Unity.PerformanceTesting.Meters
+{
+    /// <summary>
+    /// Provides stopwatch functionality for measuring time
+    /// </summary>
+    internal interface IStopWatch
+    {
+        /// <summary>
+        /// Resets and starts the stopwatch
+        /// </summary>
+        void Start();
+
+        /// <summary>
+        /// Takes a split time since start of stopwatch
+        /// </summary>
+        /// <returns>Time passed since start in milliseconds</returns>
+        double Split();
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Meters/StopWatch.cs
+====================================
+using System.Diagnostics;
+
+namespace Unity.PerformanceTesting.Meters
+{
+    /// <summary>
+    /// Takes use of System.Diagnostics.Stopwatch to provide stopwatch functionality implementing IStopWatch
+    /// </summary>
+    internal class StopWatch : IStopWatch
+    {
+        private readonly Stopwatch m_StopWatch = Stopwatch.StartNew();
+
+        public void Start()
+        {
+            m_StopWatch.Restart();
+        }
+
+        public double Split()
+        {
+            return m_StopWatch.Elapsed.TotalMilliseconds;
+        }
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/PerformanceTestException.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting.Exceptions
+{
+    /// <summary>
+    /// Performance test exception.
+    /// </summary>
+    [Serializable]
+    public class PerformanceTestException : System.Exception
+    {
+        /// <summary>
+        /// Performance test exception. Used to indicate failures while running a performance test.
+        /// </summary>
+        /// <param name="message">Exception message.</param>
+        public PerformanceTestException(string message)
+            : base(message) { }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/PerformanceTest.cs
+====================================
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Text;
+using Unity.PerformanceTesting.Runtime;
+using NUnit.Framework;
+using NUnit.Framework.Interfaces;
+using Unity.PerformanceTesting.Exceptions;
+using UnityEngine;
+using UnityEngine.TestRunner.NUnitExtensions;
+
+[assembly: InternalsVisibleTo("Unity.PerformanceTesting.Tests.Editor")]
+namespace Unity.PerformanceTesting
+{
+    /// <summary>
+    /// Represents active performance test as a singleton.
+    /// </summary>
+    [Serializable]
+    public class PerformanceTest
+    {
+        /// <summary>
+        /// Full name of the test.
+        /// </summary>
+        public string Name;
+        /// <summary>
+        /// Class name of the test.
+        /// </summary>
+        public string ClassName;
+        /// <summary>
+        /// Method name of the test.
+        /// </summary>
+        public string MethodName;
+        /// <summary>
+        /// Version of the test. Default "1".
+        /// </summary>
+        public string Version;
+        /// <summary>
+        /// List of categories assigned to the test.
+        /// </summary>
+        public List<string> Categories = new List<string>();
+        /// <summary>
+        /// List of sample groups assigned to the test.
+        /// </summary>
+        public List<SampleGroup> SampleGroups = new List<SampleGroup>();
+        /// <summary>
+        /// Singleton instance of active performance test.
+        /// </summary>
+        public static PerformanceTest Active { get; set; }
+        private static List <IDisposable> m_Disposables = new List<IDisposable>(1024);
+        internal static List<IDisposable> Disposables
+        {
+            get => m_Disposables;
+            set => m_Disposables = value ?? new List<IDisposable>(1024);
+        }
+        PerformanceTestHelper m_PerformanceTestHelper;
+
+        /// <summary>
+        /// An action to be invoked when a performance test has finished execution.
+        /// </summary>
+        public static event Action OnTestEnded;
+
+        /// <summary>
+        /// Initializes a new performance test and assigns it as singleton.
+        /// </summary>
+        public PerformanceTest()
+        {
+            Active = this;
+        }
+
+        internal static void StartTest(ITest currentTest)
+        {
+            if (currentTest.IsSuite) return;
+
+            var go = new GameObject("PerformanceTestHelper");
+            go.hideFlags = HideFlags.HideAndDontSave;
+            var performanceTestHelper = go.AddComponent<PerformanceTestHelper>();
+
+            string methodName = currentTest.Name.Contains("(")
+                ? currentTest.Name.Remove(currentTest.Name.IndexOf("(", StringComparison.Ordinal))
+                : currentTest.Name;
+
+            string className = currentTest.ClassName;
+
+            var fullName = currentTest.MethodName != methodName ? $"{currentTest.ClassName}.{currentTest.MethodName}.{currentTest.Name}" : currentTest.FullName;
+
+            var test = new PerformanceTest
+            {
+                Name = fullName,
+                ClassName = className,
+                MethodName = methodName,
+                Categories = currentTest.GetAllCategoriesFromTest(),
+                Version = GetVersion(currentTest),
+                m_PerformanceTestHelper = performanceTestHelper
+            };
+
+            Active = test;
+            performanceTestHelper.ActiveTest = test;
+        }
+
+        private static string GetVersion(ITest currentTest)
+        {
+            string version = "";
+            var methodVersions = currentTest.Method.GetCustomAttributes<VersionAttribute>(false);
+            var classVersion = currentTest.TypeInfo.Type.GetCustomAttributes(typeof(VersionAttribute), true);
+
+            if (classVersion.Length > 0)
+                version = ((VersionAttribute)classVersion[0]).Version + ".";
+            if (methodVersions.Length > 0)
+                version += methodVersions[0].Version;
+            else
+                version += "1";
+
+            return version;
+        }
+
+        internal static void EndTest(ITest test)
+        {
+            if (test.IsSuite) return;
+
+            if (Active.m_PerformanceTestHelper != null && Active.m_PerformanceTestHelper.gameObject != null)
+            {
+                UnityEngine.Object.DestroyImmediate(Active.m_PerformanceTestHelper.gameObject);
+            }
+
+            DisposeMeasurements();
+            Active.CalculateStatisticalValues();
+
+            try
+            {
+                // Notify subscribers that the test has ended by invoking OnTestEnded event
+                OnTestEnded?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                // An exception occurred while invoking the OnTestEnded event.
+                // Log the error message, exception type, and stack trace for troubleshooting.
+                Debug.LogError($"An exception occurred in OnTestEnd callback: {ex.GetType()}: {ex.Message}\n{ex.StackTrace}");
+            }
+            finally
+            {
+                // Regardless of whether the event invocation succeeded or not, perform cleanup
+                // and finalize the test-related operations.
+                PerformCleanupAndFinalization();
+            }
+        }
+
+        internal static void PerformCleanupAndFinalization()
+        {
+            Active.LogOutput(); // Log test output
+            TestContext.Out.WriteLine("##performancetestresult2:" + Active.Serialize()); // Log test result
+            PlayerCallbacks.LogMetadata(); // Log metadata
+            Active = null; // Clear active object
+            GC.Collect(); // Trigger garbage collection to free resources
+        }
+
+        private static void DisposeMeasurements()
+        {
+            for (var i = 0; i < Disposables.Count; i++)
+            {
+                Disposables[i].Dispose();
+            }
+
+            Disposables.Clear();
+        }
+
+        /// <summary>
+        /// Retrieves named sample group from active performance test.
+        /// </summary>
+        /// <param name="name">Name of sample group to retrieve.</param>
+        /// <returns>Selected sample group.</returns>
+        /// <exception cref="PerformanceTestException">Exception will be thrown if there is no active performance test.</exception>
+        public static SampleGroup GetSampleGroup(string name)
+        {
+            if (Active == null) throw new PerformanceTestException("Trying to record samples but there is no active performance tests.");
+            foreach (var sampleGroup in Active.SampleGroups)
+            {
+                if (sampleGroup.Name == name)
+                    return sampleGroup;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Adds sample group to active performance test.
+        /// </summary>
+        /// <param name="sampleGroup">Sample group to be added.</param>
+        public static void AddSampleGroup(SampleGroup sampleGroup)
+        {
+            Active.SampleGroups.Add(sampleGroup);
+        }
+
+        internal string Serialize()
+        {
+            return JsonUtility.ToJson(Active);
+        }
+
+        /// <summary>
+        /// Loops through sample groups and updates statistical values.
+        /// </summary>
+        public void CalculateStatisticalValues()
+        {
+            foreach (var sampleGroup in SampleGroups)
+            {
+                sampleGroup.UpdateStatistics();
+            }
+        }
+
+        private void LogOutput()
+        {
+            TestContext.Out.WriteLine(ToString());
+        }
+
+        static void AppendVisualization(StringBuilder sb, IList<double> data, int n, double min, double max)
+        {
+            const string bars = "▁▂▃▄▅▆▇█";
+            double range = max - min;
+            for (int i = 0; i < n; i++)
+            {
+                var sample = data[i];
+                int idx = Mathf.Clamp(Mathf.RoundToInt((float) ((sample - min) / range * (bars.Length - 1))), 0, bars.Length - 1);
+                sb.Append(bars[idx]);
+            }
+        }
+
+        private static double[] s_Buckets;
+        static void AppendSampleHistogram(StringBuilder sb, SampleGroup s, int buckets)
+        {
+            if (s_Buckets == null || s_Buckets.Length < buckets)
+                s_Buckets = new double[buckets];
+            double maxInOneBucket = 0;
+            double min = s.Min;
+            double bucketsOverRange = (buckets - 1) / (s.Max - s.Min);
+            for (int i = 0; i < s.Samples.Count; i++)
+            {
+                int bucket = Mathf.Clamp(Mathf.RoundToInt((float)((s.Samples[i] - min) * bucketsOverRange)), 0, buckets - 1);
+                s_Buckets[bucket] += 1;
+                if (s_Buckets[bucket] > maxInOneBucket)
+                    maxInOneBucket = s_Buckets[bucket];
+            }
+            AppendVisualization(sb, s_Buckets, s_Buckets.Length, 0, maxInOneBucket);
+        }
+
+        /// <summary>
+        /// Returns performance test in a readable format.
+        /// </summary>
+        /// <returns>Readable representation of performance test.</returns>
+        public override string ToString()
+        {
+            var logString = new StringBuilder();
+
+            foreach (var s in SampleGroups)
+            {
+                logString.Append(s.Name);
+
+                if (s.Samples.Count == 1)
+                {
+                    logString.AppendLine($" {s.Samples[0]:0.00} {s.Unit}s");
+                }
+                else
+                {
+                    string u = s.Unit.ShortName();
+                    logString.AppendLine($" in {s.Unit}s\nMin:\t\t{s.Min:0.00} {u}\nMedian:\t\t{s.Median:0.00} {u}\nMax:\t\t{s.Max:0.00} {u}\nAvg:\t\t{s.Average:0.00} {u}\nStdDev:\t\t{s.StandardDeviation:0.00} {u}\nSampleCount:\t{s.Samples.Count}\nSum:\t\t{s.Sum:0.00} {u}");
+                    logString.Append("First samples:\t");
+                    AppendVisualization(logString, s.Samples, Mathf.Min(s.Samples.Count, 100), s.Min, s.Max);
+                    logString.AppendLine();
+                    if (s.Samples.Count <= 512)
+                    {
+                        int numBuckets = Mathf.Min(10, s.Samples.Count / 4);
+                        if (numBuckets > 2)
+                        {
+                            logString.Append("Histogram:\t");
+                            AppendSampleHistogram(logString, s, numBuckets);
+                            logString.AppendLine();
+                        }
+                        else
+                            logString.Append("(not enough samples for histogram)\n");
+                    }
+                    logString.AppendLine();
+                }
+            }
+
+            return logString.ToString();
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Utils.cs
+====================================
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Unity.PerformanceTesting.Exceptions;
+using UnityEngine;
+
+namespace Unity.PerformanceTesting.Runtime
+{
+    internal static class Utils
+    {
+        public static string ResourcesPath => Path.Combine(Application.dataPath, "Resources");
+        public const string TestRunPath = "Assets/Resources/" + TestRunInfo;
+        public const string TestRunInfo = "PerformanceTestRunInfo.json";
+        public const string PlayerPrefKeyRunJSON = "PT_Run";
+        public const string RunSettingsPath = "Assets/Resources/" + RunSettings;
+        public const string RunSettings = "PerformanceTestRunSettings.json";
+        public const string PlayerPrefKeySettingsJSON = "PT_Settings";
+
+        public static DateTime ConvertFromUnixTimestamp(long timestamp)
+        {
+            var offset = DateTimeOffset.FromUnixTimeMilliseconds(timestamp);
+            return offset.UtcDateTime;
+        }
+
+        public static long ConvertToUnixTimestamp(DateTime date)
+        {
+            var offset = new DateTimeOffset(date);
+            return offset.ToUnixTimeMilliseconds();
+        }
+
+        public static double ConvertSample(SampleUnit from, SampleUnit to, double value)
+        {
+            if (from.Equals(to)) return value;
+            var ratio = GetRatio(from, to);
+            return value * ratio;
+        }
+
+        public static double GetRatio(SampleUnit from, SampleUnit to)
+        {
+            double f = RelativeSampleUnit(from);
+            double t = RelativeSampleUnit(to);
+            return f / t;
+        }
+
+        public static double RelativeSampleUnit(SampleUnit unit)
+        {
+            switch (unit)
+            {
+                case SampleUnit.Nanosecond:
+                    return 1;
+                case SampleUnit.Microsecond:
+                    return 1000;
+                case SampleUnit.Millisecond:
+                    return 1000000;
+                case SampleUnit.Second:
+                    return 1000000000;
+                case SampleUnit.Byte:
+                    return 1;
+                case SampleUnit.Kilobyte:
+                    return 1000;
+                case SampleUnit.Megabyte:
+                    return 1000000;
+                case SampleUnit.Gigabyte:
+                    return 1000000000;
+                default:
+                    throw new PerformanceTestException(
+                        "Wrong SampleUnit type used.");
+            }
+        }
+
+        public static void UpdateStatistics(this SampleGroup sampleGroup)
+        {
+            if (sampleGroup.Samples == null) return;
+            var samples = sampleGroup.Samples;
+            if (samples.Count < 2)
+            {
+                sampleGroup.Min = samples[0];
+                sampleGroup.Max = samples[0];
+                sampleGroup.Median = samples[0];
+                sampleGroup.Average = samples[0];
+                sampleGroup.Sum = samples[0];
+                sampleGroup.StandardDeviation = 0;
+            }
+            else
+            {
+                sampleGroup.Min = Utils.Min(samples);
+                sampleGroup.Max = Utils.Max(samples);
+                sampleGroup.Median = Utils.GetMedianValue(samples);
+                sampleGroup.Average = Utils.Average(samples);
+                sampleGroup.Sum = Utils.Sum(samples);
+                sampleGroup.StandardDeviation = Utils.GetStandardDeviation(samples, sampleGroup.Average);
+            }
+        }
+
+        public static int GetZeroValueCount(List<double> samples)
+        {
+            var zeroValues = 0;
+            foreach (var sample in samples)
+            {
+                if (Math.Abs(sample) < .0001f)
+                {
+                    zeroValues++;
+                }
+            }
+
+            return zeroValues;
+        }
+
+        public static double GetMedianValue(List<double> samples)
+        {
+            var samplesClone = new List<double>(samples);
+            var middleIndex = samplesClone.Count / 2;
+            samplesClone.Sort();
+
+            return samplesClone.Count % 2 != 0
+                ? samplesClone[middleIndex]
+                : (samplesClone[middleIndex - 1] + samplesClone[middleIndex]) / 2.0;
+        }
+
+        public static double GetPercentile(List<double> samples, double percentile)
+        {
+            if (percentile < 0.00001D)
+                return percentile;
+
+            var samplesClone = new List<double>(samples);
+            samplesClone.Sort();
+
+            if (samplesClone.Count == 1)
+            {
+                return samplesClone[0];
+            }
+
+            var rank = percentile * (samplesClone.Count + 1);
+            var integral = (int)rank;
+            var fractional = rank % 1;
+            return samplesClone[integral - 1] + fractional * (samplesClone[integral] - samplesClone[integral - 1]);
+        }
+
+        public static double GetStandardDeviation(List<double> samples, double average)
+        {
+            double sumOfSquaresOfDifferences = 0.0D;
+            foreach (var sample in samples)
+            {
+                sumOfSquaresOfDifferences += (sample - average) * (sample - average);
+            }
+
+            return Math.Sqrt(sumOfSquaresOfDifferences / samples.Count);
+        }
+
+        public static double Min(List<double> samples)
+        {
+            double min = Mathf.Infinity;
+            foreach (var sample in samples)
+            {
+                if (sample < min) min = sample;
+            }
+
+            return min;
+        }
+
+        public static double Max(List<double> samples)
+        {
+            double max = Mathf.NegativeInfinity;
+            foreach (var sample in samples)
+            {
+                if (sample > max) max = sample;
+            }
+
+            return max;
+        }
+
+        public static double Average(List<double> samples)
+        {
+            return Sum(samples) / samples.Count;
+        }
+
+        public static double Sum(List<double> samples)
+        {
+            double sum = 0.0D;
+            foreach (var sample in samples)
+            {
+                sum += sample;
+            }
+
+            return sum;
+        }
+
+        public static string RemoveIllegalCharacters(string path)
+        {
+            string invalid = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+
+            foreach (char c in invalid)
+            {
+                path = path.Replace(c.ToString(), "");
+            }
+
+            return path;
+        }
+
+        public static string GetArg(string[] args, string name)
+        {
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == name && args.Length > i + 1)
+                {
+                    return args[i + 1];
+                }
+            }
+
+            return null;
+        }
+
+        internal static int ToInt(this string s)
+        {
+            if (int.TryParse(s, out var i)) return i;
+            return -1;
+        }
+
+        internal static SampleGroup[] CreateSampleGroupsFromMarkerNames(params string[] profilerMarkerNames)
+        {
+            if (profilerMarkerNames == null) return new List<SampleGroup>().ToArray();
+            var sampleGroups = new List<SampleGroup>();
+            foreach (var marker in profilerMarkerNames)
+            {
+                sampleGroups.Add(new SampleGroup(marker, SampleUnit.Nanosecond, false));
+            }
+
+            return sampleGroups.ToArray();
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/PerformanceTestResult.cs
+====================================
+using System;
+using System.Collections.Generic;
+
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Represents a performance test result.
+    /// </summary>
+    [Serializable]
+    public class PerformanceTestResult
+    {
+        /// <summary>
+        /// Full test name.
+        /// </summary>
+        [RequiredMember] public string Name;
+
+        /// <summary>
+        /// Test script name.
+        /// </summary>
+        [RequiredMember] public string ClassName;
+
+        /// <summary>
+        /// Test method name.
+        /// </summary>
+        [RequiredMember] public string MethodName;
+
+        /// <summary>
+        /// Test version.
+        /// </summary>
+        [RequiredMember] public string Version;
+
+        /// <summary>
+        /// Categories.
+        /// </summary>
+        [RequiredMember] public List<string> Categories = new List<string>();
+
+        /// <summary>
+        /// Groups of performance samples.
+        /// </summary>
+        [RequiredMember] public List<SampleGroup> SampleGroups = new List<SampleGroup>();
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/SampleUnit.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting
+{
+    /// <summary>
+    /// Measurement unit used for sample groups.
+    /// </summary>
+    public enum SampleUnit
+    {
+        /// <summary>
+        /// Nanoseconds.
+        /// </summary>
+        Nanosecond,
+
+        /// <summary>
+        /// Microseconds.
+        /// </summary>
+        Microsecond,
+
+        /// <summary>
+        /// Milliseconds.
+        /// </summary>
+        Millisecond,
+
+        /// <summary>
+        /// Seconds.
+        /// </summary>
+        Second,
+
+        /// <summary>
+        /// Bytes.
+        /// </summary>
+        Byte,
+
+        /// <summary>
+        /// Kilobytes.
+        /// </summary>
+        Kilobyte,
+
+        /// <summary>
+        /// Megabytes.
+        /// </summary>
+        Megabyte,
+
+        /// <summary>
+        /// Gigabytes.
+        /// </summary>
+        Gigabyte,
+
+        /// <summary>
+        /// Undefined, represents any other unit we don't have by default. When using it make sure your sample group name represents the measurement.
+        /// </summary>
+        Undefined
+    }
+
+    static class SampleUnitExtensions
+    {
+        public static string ShortName(this SampleUnit s)
+        {
+            switch (s)
+            {
+                case SampleUnit.Nanosecond:
+                    return "ns";
+                case SampleUnit.Microsecond:
+                    return "μs";
+                case SampleUnit.Millisecond:
+                    return "ms";
+                case SampleUnit.Second:
+                    return "s";
+                case SampleUnit.Byte:
+                    return "b";
+                case SampleUnit.Kilobyte:
+                    return "kb";
+                case SampleUnit.Megabyte:
+                    return "mb";
+                case SampleUnit.Gigabyte:
+                    return "gb";
+                case SampleUnit.Undefined:
+                    return "";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(s), s, null);
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/Run.cs
+====================================
+using System;
+using System.Collections.Generic;
+
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Represents a performance test run.
+    /// </summary>
+    [Serializable]
+    public class Run
+    {
+        /// <summary>
+        /// Test Suite.
+        /// </summary>
+        [RequiredMember] public string TestSuite;
+        /// <summary>
+        /// Test run start datetime in Unix Epoch milliseconds format.
+        /// </summary>
+        [RequiredMember] public long Date;
+        /// <summary>
+        /// Player settings.
+        /// </summary>
+        [RequiredMember] public Player Player;
+        /// <summary>
+        /// Hardware information.
+        /// </summary>
+        [RequiredMember] public Hardware Hardware;
+        /// <summary>
+        /// Editor version.
+        /// </summary>
+        [RequiredMember] public Editor Editor;
+        /// <summary>
+        /// Package dependencies.
+        /// </summary>
+        [RequiredMember] public List<string> Dependencies = new List<string>();
+        /// <summary>
+        /// List of performance test results.
+        /// </summary>
+        [RequiredMember] public List<PerformanceTestResult> Results = new List<PerformanceTestResult>();
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/SampleGroup.cs
+====================================
+using System;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Unity.PerformanceTesting.Exceptions;
+
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Represents a group of samples for a performance test that share a common name and unit.
+    /// </summary>
+    [Serializable]
+    public class SampleGroup : IDeserializationCallback
+    {
+        /// <summary>
+        /// Name of the sample group.
+        /// </summary>
+        public string Name;
+        /// <summary>
+        /// Measurement unit.
+        /// </summary>
+        public SampleUnit Unit;
+        /// <summary>
+        /// Whether the measurement is inverted and increase is positive.
+        /// </summary>
+        public bool IncreaseIsBetter;
+        /// <summary>
+        /// List of samples.
+        /// </summary>
+        public List<double> Samples = new List<double>();
+        /// <summary>
+        /// Minimum value of samples.
+        /// </summary>
+        public double Min;
+        /// <summary>
+        /// Maximum value of samples.
+        /// </summary>
+        public double Max;
+        /// <summary>
+        /// Median value of samples.
+        /// </summary>
+        public double Median;
+        /// <summary>
+        /// Average value of samples.
+        /// </summary>
+        public double Average;
+        /// <summary>
+        /// Standard deviation of samples.
+        /// </summary>
+        public double StandardDeviation;
+        /// <summary>
+        /// Sum of samples.
+        /// </summary>
+        public double Sum;
+
+        /// <summary>
+        /// Creates a sample group without initializing values.
+        /// </summary>
+        public SampleGroup(){}
+
+        /// <summary>
+        /// Creates a sample group with provided arguments.
+        /// </summary>
+        /// <param name="name">Sample group name.</param>
+        /// <param name="unit">Measurement unit.</param>
+        /// <param name="increaseIsBetter">Whether the measurement is inverted and increase is positive.</param>
+        /// <exception cref="PerformanceTestException">Exception thrown when invalid name is used.</exception>
+        public SampleGroup(string name, SampleUnit unit, bool increaseIsBetter)
+        {
+            Name = name;
+            Unit = unit;
+            IncreaseIsBetter = increaseIsBetter;
+
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new PerformanceTestException("Sample group name is empty. Please assign a valid name.");
+            }
+        }
+
+        /// <summary>
+        /// Validates the deserialized object.
+        /// </summary>
+        /// <param name="sender">The object that initiated the deserialization process.</param>
+        public void OnDeserialization(object sender)
+        {
+            if (string.IsNullOrEmpty(Name))
+            {
+                throw new PerformanceTestException("Sample group name is empty. Please assign a valid name.");
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/Editor.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Represents information about Editor version.
+    /// </summary>
+    [Serializable]
+    public class Editor
+    {
+        /// <summary>
+        /// Full editor version including changeset.
+        /// </summary>
+        [RequiredMember] public string Version;
+
+        /// <summary>
+        /// Branch name from which the editor was built.
+        /// </summary>
+        [RequiredMember] public string Branch;
+
+        /// <summary>
+        /// Changeset 12 characters long.
+        /// </summary>
+        [RequiredMember] public string Changeset;
+
+        /// <summary>
+        /// Editor version datetime in Unix Epoch milliseconds format.
+        /// </summary>
+        [RequiredMember] public int Date;
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/Project.cs
+====================================
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Represents Project version.
+    /// </summary>
+    public class Project
+    {
+        /// <summary>
+        /// Name of the project.
+        /// </summary>
+        [RequiredMember] public string Name;
+
+        /// <summary>
+        /// Version of the project unrelated to changeset e.g. package version.
+        /// </summary>
+        [RequiredMember] public string Version;
+
+        /// <summary>
+        /// Commit branch.
+        /// </summary>
+        [RequiredMember] public string Branch;
+
+        /// <summary>
+        /// Commit changeset.
+        /// </summary>
+        [RequiredMember] public string Changeset;
+
+        /// <summary>
+        /// Commit datetime in Unix Epoch milliseconds format.
+        /// </summary>
+        [RequiredMember] public int Date;
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/Player.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Represents player settings of a performance test, sampled at the beginning of a test run.
+    /// </summary>
+    [Serializable]
+    public class Player
+    {
+        /// <summary>
+        /// True if the player is a Development build. False if the player is a Release build.
+        /// </summary>
+        [RequiredMember] public bool Development;
+
+        /// <summary>
+        /// Screen resolution width.
+        /// </summary>
+        [RequiredMember] public int ScreenWidth;
+
+        /// <summary>
+        /// Screen resolution height.
+        /// </summary>
+        [RequiredMember] public int ScreenHeight;
+
+        /// <summary>
+        /// Screen refresh rate.
+        /// </summary>
+        [RequiredMember] public int ScreenRefreshRate;
+
+        /// <summary>
+        /// Whether the player is in fullscreen or windowed modes.
+        /// </summary>
+        [RequiredMember] public bool Fullscreen;
+
+        /// <summary>
+        /// The number of VSyncs that should pass between each frame. Use 'Don't Sync' (0) to not wait for VSync. Value must be 0, 1, 2, 3, or 4.
+        /// </summary>
+        [RequiredMember] public int Vsync;
+
+        /// <summary>
+        /// Anti aliasing.
+        /// </summary>
+        [RequiredMember] public int AntiAliasing;
+
+        /// <summary>
+        /// Whether player is in batchmode or not.
+        /// </summary>
+        [RequiredMember] public bool Batchmode;
+
+        /// <summary>
+        /// Render threading mode.
+        /// </summary>
+        [RequiredMember] public string RenderThreadingMode;
+
+        /// <summary>
+        /// Whether the render threading mode is multithreaded or not.
+        /// </summary>
+        [RequiredMember] public bool MtRendering;
+
+        /// <summary>
+        /// Whether the render threading mode uses Graphics Jobs or not.
+        /// </summary>
+        [RequiredMember] public bool GraphicsJobs;
+
+        /// <summary>
+        /// Whether GPU skinning is enabled or not.
+        /// </summary>
+        [RequiredMember] public bool GpuSkinning;
+
+        /// <summary>
+        /// String representation of players RuntimePlatform.
+        /// </summary>
+        [RequiredMember] public string Platform;
+
+        /// <summary>
+        /// Color space.
+        /// </summary>
+        [RequiredMember] public string ColorSpace;
+
+        /// <summary>
+        /// Anisotropic filtering.
+        /// </summary>
+        [RequiredMember] public string AnisotropicFiltering;
+
+        /// <summary>
+        /// Blend weights.
+        /// </summary>
+        [RequiredMember] public string BlendWeights;
+
+        /// <summary>
+        /// Graphics API.
+        /// </summary>
+        [RequiredMember] public string GraphicsApi;
+
+        // strings because their enums are editor only.
+        /// <summary>
+        /// Scripting backend.
+        /// </summary>
+        [RequiredMember] public string ScriptingBackend;
+        /// <summary>
+        /// Android target SDK version.
+        /// </summary>
+        [RequiredMember] public string AndroidTargetSdkVersion;
+        /// <summary>
+        /// Android build system.
+        /// </summary>
+        [RequiredMember] public string AndroidBuildSystem;
+        /// <summary>
+        /// Build target.
+        /// </summary>
+        [RequiredMember] public string BuildTarget;
+        /// <summary>
+        /// Stereo rendering path.
+        /// </summary>
+        [RequiredMember] public string StereoRenderingPath;
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/RunSettings.cs
+====================================
+using System;
+using System.Runtime.Serialization;
+using Unity.PerformanceTesting.Runtime;
+
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Settings store
+    /// @TODO make it public along with guidelines of how and when to use
+    /// @TODO add a property bag
+    /// </summary>
+    [Serializable]
+    internal class RunSettings : IDeserializationCallback
+    {
+        public RunSettings(params string[] args)
+        {
+            if (int.TryParse(Utils.GetArg(args, "-performance-measurement-count"), out var measurementMultiplier))
+            {
+                MeasurementCount = measurementMultiplier;
+            }
+        }
+
+        private static RunSettings m_Instance;
+
+        /// <summary>
+        /// Singleton instance of settings.
+        /// </summary>
+        public static RunSettings Instance
+        {
+            get
+            {
+                if (m_Instance == null)
+                {
+                    m_Instance = ResourcesLoader.Load<RunSettings>(Utils.RunSettings, Utils.PlayerPrefKeySettingsJSON);
+                }
+
+                return m_Instance;
+            }
+            set { m_Instance = value; }
+        }
+
+        /// <summary>
+        /// Measurement counts will be overriden by specified value when using Measure.Method and Measure.Frames.
+        /// </summary>
+        public int MeasurementCount = -1;
+
+        /// <summary>
+        /// Validates the deserialized object.
+        /// </summary>
+        /// <param name="sender">The object that initiated the deserialization process.</param>
+        public void OnDeserialization(object sender)
+        {
+            if (MeasurementCount < -1)
+            {
+                throw new SerializationException("MeasurementCount cannot be negative, except for the initial value of -1.");
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Data/Hardware.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting.Data
+{
+    /// <summary>
+    /// Represents information about Hardware.
+    /// </summary>
+    [Serializable]
+    public class Hardware
+    {
+        /// <summary>
+        /// Operating system.
+        /// </summary>
+        [RequiredMember] public string OperatingSystem;
+
+        /// <summary>
+        /// Device model.
+        /// </summary>
+        [RequiredMember] public string DeviceModel;
+
+        /// <summary>
+        /// Device name.
+        /// </summary>
+        [RequiredMember] public string DeviceName;
+
+        /// <summary>
+        /// Processor type name.
+        /// </summary>
+        [RequiredMember] public string ProcessorType;
+
+        /// <summary>
+        /// Processor thread count.
+        /// </summary>
+        [RequiredMember] public int ProcessorCount;
+
+        /// <summary>
+        /// Graphics device name.
+        /// </summary>
+        [RequiredMember] public string GraphicsDeviceName;
+
+        /// <summary>
+        /// System Memory size in MegaBytes.
+        /// </summary>
+        [RequiredMember] public int SystemMemorySizeMB;
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Measurements/MethodMeasurement.cs
+====================================
+using System;
+using System.Collections.Generic;
+using Unity.PerformanceTesting.Data;
+using Unity.PerformanceTesting.Runtime;
+using Unity.PerformanceTesting.Exceptions;
+using Unity.PerformanceTesting.Meters;
+using Unity.PerformanceTesting.Statistics;
+using UnityEngine;
+using UnityEngine.Profiling;
+
+namespace Unity.PerformanceTesting.Measurements
+{
+    /// <summary>
+    /// Used as a helper class to sample execution time of methods. Uses fluent pattern to build and needs to be executed with Run method.
+    /// </summary>
+    public class MethodMeasurement
+    {
+        internal const int k_MeasurementCount = 9;
+        private const int k_MinMeasurementTimeMs = 100;
+        private const int k_MinWarmupTimeMs = 100;
+        private const int k_ProbingMultiplier = 4;
+        private const int k_MaxIterations = 10000;
+        internal const int k_MaxDynamicMeasurements = 1000;
+        private const double k_DefaultMaxRelativeError = 0.02;
+        private const ConfidenceLevel k_DefaultConfidenceLevel = ConfidenceLevel.L99;
+        private const OutlierMode k_DefaultOutlierMode = OutlierMode.Remove;
+        private readonly Action m_Action;
+        private readonly List<SampleGroup> m_SampleGroups = new List<SampleGroup>();
+        private readonly Recorder m_GCRecorder;
+
+        private Action m_Setup;
+        private Action m_Cleanup;
+        private SampleGroup m_SampleGroup = new SampleGroup("Time", SampleUnit.Millisecond, false);
+        private SampleGroup m_SampleGroupGC = new SampleGroup("Time.GC()", SampleUnit.Undefined, false);
+        private int m_WarmupCount;
+        private int m_MeasurementCount;
+        internal bool m_DynamicMeasurementCount;
+        private double m_MaxRelativeError = k_DefaultMaxRelativeError;
+        private ConfidenceLevel m_ConfidenceLevel = k_DefaultConfidenceLevel;
+        private OutlierMode m_OutlierMode = k_DefaultOutlierMode;
+        private int m_IterationCount = 1;
+        private bool m_GC;
+        private double m_GCAccumulation;
+        private IStopWatch m_Watch;
+
+        /// <summary>
+        /// Initializes a method measurement.
+        /// </summary>
+        /// <param name="action">Method to be measured.</param>
+        public MethodMeasurement(Action action)
+        {
+            m_Action = action;
+            m_GCRecorder = Recorder.Get("GC.Alloc");
+            m_GCRecorder.enabled = false;
+            if (m_Watch == null) m_Watch = new StopWatch();
+        }
+
+        internal MethodMeasurement StopWatch(IStopWatch watch)
+        {
+            m_Watch = watch;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Will record provided profiler markers once per frame.
+        /// </summary>
+        /// <param name="profilerMarkerNames">Profiler marker names as in profiler window.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement ProfilerMarkers(params string[] profilerMarkerNames)
+        {
+            if (profilerMarkerNames == null) return this;
+            foreach (var marker in profilerMarkerNames)
+            {
+                var sampleGroup = new SampleGroup(marker, SampleUnit.Nanosecond, false);
+                sampleGroup.GetRecorder();
+                sampleGroup.Recorder.enabled = false;
+                m_SampleGroups.Add(sampleGroup);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Will record provided profiler markers once per frame with additional control over the SampleUnit.
+        /// </summary>
+        /// <param name="sampleGroups">List of SampleGroups where a name matches the profiler marker and desired SampleUnit.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement ProfilerMarkers(params SampleGroup[] sampleGroups)
+        {
+            if (sampleGroups == null){ return this;}
+            foreach (var sampleGroup in sampleGroups)
+            {
+                sampleGroup.GetRecorder();
+                sampleGroup.Recorder.enabled = false;
+                m_SampleGroups.Add(sampleGroup);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Overrides the default SampleGroup of "Time".
+        /// </summary>
+        /// <param name="name">Desired name for measurement SampleGroup.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement SampleGroup(string name)
+        {
+            m_SampleGroup = new SampleGroup(name, SampleUnit.Millisecond, false);
+            m_SampleGroupGC = new SampleGroup(name + ".GC()", SampleUnit.Undefined, false);
+            return this;
+        }
+
+        /// <summary>
+        /// Overrides the default SampleGroup.
+        /// </summary>
+        /// <param name="sampleGroup">SampleGroup with your desired name and unit.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement SampleGroup(SampleGroup sampleGroup)
+        {
+            m_SampleGroup = sampleGroup;
+            m_SampleGroupGC = new SampleGroup(sampleGroup.Name + ".GC()", SampleUnit.Undefined, false);
+            return this;
+        }
+
+        /// <summary>
+        /// Count of times to execute before measurements are collected. If unspecified, a default warmup will be assigned.
+        /// </summary>
+        /// <param name="count">Count of warmup iterations to execute.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement WarmupCount(int count)
+        {
+            m_WarmupCount = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Specifies the amount of method executions for a single measurement.
+        /// </summary>
+        /// <param name="count">Count of method executions.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement IterationsPerMeasurement(int count)
+        {
+            m_IterationCount = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Specifies the number of measurements to take.
+        /// </summary>
+        /// <param name="count">Count of measurements to take.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement MeasurementCount(int count)
+        {
+            m_MeasurementCount = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Dynamically find a suitable measurement count based on the margin of error of the samples.
+        /// The measurements will stop once a certain amount of samples (specified by a confidence interval)
+        /// falls within an acceptable error range from the result (defined by a relative error of the mean).
+        /// A default margin of error range of 2% and a default confidence interval of 99% will be used.
+        /// </summary>
+        /// <param name="outlierMode">Outlier mode allows to include or exclude outliers when evaluating the stop criterion.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement DynamicMeasurementCount(OutlierMode outlierMode = k_DefaultOutlierMode)
+        {
+            m_DynamicMeasurementCount = true;
+            m_OutlierMode = outlierMode;
+            return this;
+        }
+
+        /// <summary>
+        /// Dynamically find a suitable measurement count based on the margin of error of the samples.
+        /// The measurements will stop once a certain amount of samples (specified by a confidence interval)
+        /// falls within an acceptable error range from the result (defined by a relative error of the mean).
+        /// </summary>
+        /// <param name="maxRelativeError">The maximum relative error of the mean that the margin of error must fall into.</param>
+        /// <param name="confidenceLevel">The confidence interval which will be used to calculate the margin of error.</param>
+        /// <param name="outlierMode">Outlier mode allows to include or exclude outliers when evaluating the stop criterion.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement DynamicMeasurementCount(double maxRelativeError, ConfidenceLevel confidenceLevel = k_DefaultConfidenceLevel,
+            OutlierMode outlierMode = k_DefaultOutlierMode)
+        {
+            m_MaxRelativeError = maxRelativeError;
+            m_ConfidenceLevel = confidenceLevel;
+            m_DynamicMeasurementCount = true;
+            m_OutlierMode = outlierMode;
+            return this;
+        }
+
+        /// <summary>
+        /// Used to provide a cleanup method which will not be measured.
+        /// </summary>
+        /// <param name="action">Cleanup method to execute.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement CleanUp(Action action)
+        {
+            m_Cleanup = action;
+            return this;
+        }
+
+        /// <summary>
+        /// Used to provide a setup method which will run before the measurement.
+        /// </summary>
+        /// <param name="action">Setup method to execute.</param>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement SetUp(Action action)
+        {
+            m_Setup = action;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables recording of garbage collector calls.
+        /// </summary>
+        /// <returns>An updated instance of the MethodMeasurement to be used in fluent syntax.</returns>
+        public MethodMeasurement GC()
+        {
+            m_GC = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Executes the measurement with given parameters. When MeasurementCount is not provided, a probing method will run to determine desired measurement counts.
+        /// </summary>
+        public void Run()
+        {
+            ValidateCorrectDynamicMeasurementCountUsage();
+            SettingsOverride();
+            var settingsCount = RunSettings.Instance.MeasurementCount;
+
+            if (m_MeasurementCount > 0 || settingsCount > -1)
+            {
+                Warmup(m_WarmupCount);
+                RunForIterations(m_IterationCount, m_MeasurementCount, useAverage: false);
+                return;
+            }
+
+            if (m_DynamicMeasurementCount)
+            {
+                Warmup(m_WarmupCount);
+                RunForIterations(m_IterationCount);
+                return;
+            }
+
+            var iterations = Probing();
+            RunForIterations(iterations, k_MeasurementCount, useAverage: true);
+        }
+
+        private void ValidateCorrectDynamicMeasurementCountUsage()
+        {
+            if (!m_DynamicMeasurementCount)
+                return;
+
+            if (m_MeasurementCount > 0)
+            {
+                m_DynamicMeasurementCount = false;
+                Debug.LogWarning("DynamicMeasurementCount will be ignored because MeasurementCount was specified.");
+            }
+        }
+
+        /// <summary>
+        /// Overrides measurement count based on performance run settings
+        /// </summary>
+        private void SettingsOverride()
+        {
+            var count = RunSettings.Instance.MeasurementCount;
+            if (count < 0) { return; }
+            m_MeasurementCount = count;
+            m_WarmupCount = m_WarmupCount > 0 ? count : 0;
+            m_DynamicMeasurementCount = false;
+        }
+
+        private void RunForIterations(int iterations, int measurements, bool useAverage)
+        {
+            EnableMarkers();
+            for (var j = 0; j < measurements; j++)
+            {
+                var executionTime = iterations == 1 ? ExecuteSingleIteration() : ExecuteForIterations(iterations);
+                if (useAverage) executionTime /= iterations;
+                var delta = Utils.ConvertSample(SampleUnit.Millisecond, m_SampleGroup.Unit, executionTime);
+                Measure.Custom(m_SampleGroup, delta);
+            }
+
+            DisableAndMeasureMarkers();
+        }
+
+        private void RunForIterations(int iterations)
+        {
+            EnableMarkers();
+
+            while(true)
+            {
+                var executionTime = iterations == 1 ? ExecuteSingleIteration() : ExecuteForIterations(iterations);
+                var delta = Utils.ConvertSample(SampleUnit.Millisecond, m_SampleGroup.Unit, executionTime);
+                Measure.Custom(m_SampleGroup, delta);
+
+                if (SampleCountFulfillsRequirements())
+                    break;
+            }
+
+            DisableAndMeasureMarkers();
+        }
+
+        private void EnableMarkers()
+        {
+            foreach (var sampleGroup in m_SampleGroups)
+            {
+                sampleGroup.Recorder.enabled = true;
+            }
+        }
+
+        private void DisableAndMeasureMarkers()
+        {
+            foreach (var sampleGroup in m_SampleGroups)
+            {
+                sampleGroup.Recorder.enabled = false;
+                var sample = sampleGroup.Recorder.elapsedNanoseconds;
+                var blockCount = sampleGroup.Recorder.sampleBlockCount;
+                if(blockCount == 0) continue;
+                var delta = Utils.ConvertSample(SampleUnit.Nanosecond, sampleGroup.Unit, sample);
+                Measure.Custom(sampleGroup, delta / blockCount);
+            }
+        }
+
+        private bool SampleCountFulfillsRequirements()
+        {
+            var samples = m_SampleGroup.Samples;
+            var sampleCount = samples.Count;
+            var statistics = MeasurementsStatistics.Calculate(samples, m_OutlierMode, m_ConfidenceLevel);
+            var actualError = statistics.MarginOfError;
+            var maxError = m_MaxRelativeError * statistics.Mean;
+
+            if (sampleCount >= k_MeasurementCount && actualError < maxError)
+                return true;
+
+            if (sampleCount >= k_MaxDynamicMeasurements)
+                return true;
+
+            return false;
+        }
+
+        private int Probing()
+        {
+            var priorGC = m_GC;
+            m_GC = false;
+
+            var executionTime = 0.0D;
+            var iterations = 1;
+
+            if (m_WarmupCount > 0)
+                throw new PerformanceTestException(
+                    "Please provide MeasurementCount or remove WarmupCount in your usage of Measure.Method");
+
+            while (executionTime < k_MinWarmupTimeMs)
+            {
+                executionTime = m_Watch.Split();
+                Warmup(iterations);
+                executionTime = m_Watch.Split() - executionTime;
+
+                if (executionTime < k_MinWarmupTimeMs)
+                {
+                    iterations *= k_ProbingMultiplier;
+                }
+            }
+
+            if (iterations == 1)
+            {
+                ExecuteActionWithCleanupSetup();
+                ExecuteActionWithCleanupSetup();
+
+                m_GC = priorGC;
+                return 1;
+            }
+
+            var deisredIterationsCount =
+                Mathf.Clamp((int) (k_MinMeasurementTimeMs * iterations / executionTime), 1, k_MaxIterations);
+
+            m_GC = priorGC;
+            return deisredIterationsCount;
+        }
+
+        private void Warmup(int iterations)
+        {
+            var priorGC = m_GC;
+            m_GC = false;
+
+            for (var i = 0; i < iterations; i++)
+            {
+                ExecuteForIterations(m_IterationCount);
+            }
+
+            m_GC = priorGC;
+        }
+
+        private double ExecuteActionWithCleanupSetup()
+        {
+            m_Setup?.Invoke();
+            if (m_GC) StartGCRecorder();
+
+            var executionTime = m_Watch.Split();
+            m_Action.Invoke();
+            executionTime = m_Watch.Split() - executionTime;
+
+            if (m_GC) AccumulateGCRecorder();
+            m_Cleanup?.Invoke();
+
+            return executionTime;
+        }
+
+        private double ExecuteSingleIteration()
+        {
+            m_Setup?.Invoke();
+            if (m_GC) StartGCRecorder();
+
+            var executionTime = m_Watch.Split();
+            m_Action.Invoke();
+            executionTime = m_Watch.Split() - executionTime;
+
+            if (m_GC) EndGCRecorderAndMeasure(1);
+            m_Cleanup?.Invoke();
+
+            return executionTime;
+        }
+
+        private double ExecuteForIterations(int iterations)
+        {
+            var executionTime = 0.0D;
+
+            if (m_Cleanup != null || m_Setup != null)
+            {
+                for (var i = 0; i < iterations; i++)
+                {
+                    executionTime += ExecuteActionWithCleanupSetup();
+                }
+
+                if (m_GC) EndAccumulatedGCRecorder(iterations);
+            }
+            else
+            {
+                if (m_GC) StartGCRecorder();
+
+                executionTime = m_Watch.Split();
+                for (var i = 0; i < iterations; i++)
+                {
+                    m_Action.Invoke();
+                }
+
+                executionTime = m_Watch.Split() - executionTime;
+
+                if (m_GC) EndGCRecorderAndMeasure(iterations);
+            }
+
+            return executionTime;
+        }
+
+        private void StartGCRecorder()
+        {
+            System.GC.Collect();
+
+            m_GCRecorder.enabled = false;
+            m_GCRecorder.enabled = true;
+        }
+
+        private void AccumulateGCRecorder()
+        {
+            m_GCRecorder.enabled = false;
+            m_GCAccumulation += m_GCRecorder.sampleBlockCount;
+        }
+
+        private void EndAccumulatedGCRecorder(int iterations)
+        {
+            m_GCRecorder.enabled = false;
+            Measure.Custom(m_SampleGroupGC, m_GCAccumulation / iterations);
+            m_GCAccumulation = 0;
+        }
+
+        private void EndGCRecorderAndMeasure(int iterations)
+        {
+            m_GCRecorder.enabled = false;
+            Measure.Custom(m_SampleGroupGC, (double) m_GCRecorder.sampleBlockCount / iterations);
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Measurements/ProfilerMeasurement.cs
+====================================
+using System;
+using Unity.PerformanceTesting.Runtime;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+namespace Unity.PerformanceTesting.Measurements
+{
+    /// <summary>
+    /// Provides a way to measure profiler markers.
+    /// </summary>
+    public struct ProfilerMeasurement : IDisposable
+    {
+        private readonly ProfilerMarkerMeasurement m_Test;
+
+        /// <summary>
+        /// Initializes a profiler marker measurement.
+        /// </summary>
+        /// <param name="sampleGroups">List of sample groups with name set to match profiler markers to be measured.</param>
+        public ProfilerMeasurement(SampleGroup[] sampleGroups)
+        {
+            if (sampleGroups == null)
+            {
+                m_Test = null;
+                return;
+            }
+
+            if (sampleGroups.Length == 0)
+            {
+                m_Test = null;
+                return;
+            }
+
+            var go = new GameObject("Recorder");
+            if (Application.isPlaying) Object.DontDestroyOnLoad(go);
+            go.hideFlags = HideFlags.HideAndDontSave;
+            m_Test = go.AddComponent<ProfilerMarkerMeasurement>();
+            m_Test.AddProfilerSampleGroup(sampleGroups);
+            PerformanceTest.Disposables.Add(this);
+        }
+
+        /// <summary>
+        /// Initializes a profiler marker measurement.
+        /// </summary>
+        /// <param name="profilerMarkers">List of profiler markers to be measured.</param>
+        public ProfilerMeasurement(string[] profilerMarkers): this(Utils.CreateSampleGroupsFromMarkerNames(profilerMarkers))
+        {
+        }
+
+        /// <summary>
+        /// Stops profiler marker measurement and adds them to the provided sample group.
+        /// </summary>
+        public void Dispose()
+        {
+            PerformanceTest.Disposables.Remove(this);
+            if (m_Test == null) return;
+            m_Test.StopAndSampleRecorders();
+            Object.DestroyImmediate(m_Test.gameObject);
+        }
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Measurements/FrametimeMeasurement.cs
+====================================
+using UnityEngine;
+
+namespace Unity.PerformanceTesting.Measurements
+{
+    internal class FrameTimeMeasurement : MonoBehaviour
+    {
+        public SampleGroup SampleGroup;
+
+        void Update()
+        {
+            Measure.Custom(SampleGroup, Time.unscaledDeltaTime * 1000);
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Measurements/FramesMeasurement.cs
+====================================
+using System;
+using System.Collections;
+using System.Diagnostics;
+using Unity.PerformanceTesting.Data;
+using Unity.PerformanceTesting.Runtime;
+using Unity.PerformanceTesting.Statistics;
+using UnityEngine;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+
+namespace Unity.PerformanceTesting.Measurements
+{
+    /// <summary>
+    /// Allows measuring of frame times.
+    /// </summary>
+    public class FramesMeasurement
+    {
+        private const int k_MinTestTimeMs = 500;
+        private const int k_MinWarmupTimeMs = 80;
+        private const int k_ProbingMultiplier = 4;
+        internal const int k_MinIterations = 7;
+        internal const int k_MaxDynamicMeasurements = 1000;
+        private const double k_DefaultMaxRelativeError = 0.02;
+        private const ConfidenceLevel k_DefaultConfidenceLevel = ConfidenceLevel.L99;
+        private const OutlierMode k_DefaultOutlierMode = OutlierMode.Remove;
+
+        private SampleGroup[] m_ProfilerSampleGroups;
+        private SampleGroup m_SampleGroup = new SampleGroup("FrameTime");
+        private int m_DesiredFrameCount;
+        internal bool m_DynamicMeasurementCount;
+        private double m_MaxRelativeError = k_DefaultMaxRelativeError;
+        private ConfidenceLevel m_ConfidenceLevel = k_DefaultConfidenceLevel;
+        private OutlierMode m_OutlierMode = k_DefaultOutlierMode;
+        private int m_Executions;
+        private int m_Warmup = -1;
+        private bool m_RecordFrametime = true;
+
+        /// <summary>
+        /// Records provided profiler markers once per frame.
+        /// </summary>
+        /// <param name="profilerMarkerNames">Profiler marker names as in profiler window.</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement ProfilerMarkers(params string[] profilerMarkerNames)
+        {
+            m_ProfilerSampleGroups = Utils.CreateSampleGroupsFromMarkerNames(profilerMarkerNames);
+            return this;
+        }
+
+        /// <summary>
+        /// Records provided profiler markers once per frame.
+        /// </summary>
+        /// <param name="sampleGroups">List of SampleGroups where a name matches the profiler marker and desired SampleUnit</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement ProfilerMarkers(params SampleGroup[] sampleGroups)
+        {
+            m_ProfilerSampleGroups = sampleGroups;
+            return this;
+        }
+
+        /// <summary>
+        /// Overrides the name of default sample group "Time".
+        /// </summary>
+        /// <param name="name">Name of the sample group.</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement SampleGroup(string name)
+        {
+            m_SampleGroup.Name = name;
+            return this;
+        }
+
+        /// <summary>
+        /// Overrides the default sample group "Time"
+        /// </summary>
+        /// <param name="sampleGroup">Sample group to use.</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement SampleGroup(SampleGroup sampleGroup)
+        {
+            m_SampleGroup = sampleGroup;
+            return this;
+        }
+
+        /// <summary>
+        /// Count of measurements to take.
+        /// </summary>
+        /// <param name="count">Count of measurements.</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement MeasurementCount(int count)
+        {
+            m_Executions = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Dynamically find a suitable measurement count based on the margin of error of the samples.
+        /// The measurements will stop once a certain amount of samples (specified by a confidence interval)
+        /// falls within an acceptable error range from the result (defined by a relative error of the mean).
+        /// A default margin of error range of 2% and a default confidence interval of 99% will be used.
+        /// </summary>
+        /// <param name="outlierMode">Outlier mode allows to include or exclude outliers when evaluating the stop criterion.</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement DynamicMeasurementCount(OutlierMode outlierMode = k_DefaultOutlierMode)
+        {
+            m_DynamicMeasurementCount = true;
+            m_OutlierMode = outlierMode;
+            return this;
+        }
+
+        /// <summary>
+        /// Dynamically find a suitable measurement count based on the margin of error of the samples.
+        /// The measurements will stop once a certain amount of samples (specified by a confidence interval)
+        /// falls within an acceptable error range from the result (defined by a relative error of the mean).
+        /// </summary>
+        /// <param name="maxRelativeError">The maximum relative error of the mean that the margin of error must fall into.</param>
+        /// <param name="confidenceLevel">The confidence interval which will be used to calculate the margin of error.</param>
+        /// <param name="outlierMode">Outlier mode allows to include or exclude outliers when evaluating the stop criterion.</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement DynamicMeasurementCount(double maxRelativeError, ConfidenceLevel confidenceLevel = k_DefaultConfidenceLevel,
+            OutlierMode outlierMode = k_DefaultOutlierMode)
+        {
+            m_MaxRelativeError = maxRelativeError;
+            m_ConfidenceLevel = confidenceLevel;
+            m_DynamicMeasurementCount = true;
+            m_OutlierMode = outlierMode;
+            return this;
+        }
+
+        /// <summary>
+        /// Count of warmup executions.
+        /// </summary>
+        /// <param name="count">Count of warmup executions.</param>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement WarmupCount(int count)
+        {
+            m_Warmup = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Specifies frame times should not be recorded.
+        /// </summary>
+        /// <returns>An updated instance of the FramesMeasurement to be used in fluent syntax.</returns>
+        public FramesMeasurement DontRecordFrametime()
+        {
+            m_RecordFrametime = false;
+            return this;
+        }
+
+        /// <summary>
+        /// Switches frame time measurement to asynchronous scope measurement.
+        /// </summary>
+        /// <param name="name">Sample group name.</param>
+        /// <returns>A ScopedFrameTimeMeasurement instance configured according to the given arguments.</returns>
+        public ScopedFrameTimeMeasurement Scope(string name = "Time")
+        {
+            return new ScopedFrameTimeMeasurement(name);
+        }
+
+        /// <summary>
+        /// Switches frame time measurement to asynchronous scope measurement.
+        /// </summary>
+        /// <param name="sampleGroup">Sample group to save measurements.</param>
+        /// <returns>A ScopedFrameTimeMeasurement instance configured according to the given arguments.</returns>
+        public ScopedFrameTimeMeasurement Scope(SampleGroup sampleGroup)
+        {
+            return new ScopedFrameTimeMeasurement(sampleGroup);
+        }
+
+        /// <summary>
+        /// Executes the frame time measurement with given parameters. When MeasurementCount is not provided, a probing method will run to determine desired measurement counts.
+        /// </summary>
+        /// <returns>IEnumerator to yield until finish.</returns>
+        public IEnumerator Run()
+        {
+            ValidateCorrectDynamicMeasurementCountUsage();
+
+            if (!ValidateMeasurementAndWarmupCount()) yield break;
+
+            SettingsOverride();
+
+            yield return m_Warmup > -1 ? WaitFor(m_Warmup) : GetDesiredIterationCount();
+
+            using (Measure.ProfilerMarkers(m_ProfilerSampleGroups))
+            {
+                if (m_DynamicMeasurementCount)
+                {
+                    yield return RunDynamicMeasurementCount();
+                }
+                else
+                {
+                    yield return RunFixedMeasurementCount();
+                }
+
+                // WaitForEndOfFrame coroutine is not invoked on the editor in batch mode
+                // This may lead to unexpected behavior and is better to avoid
+                // https://docs.unity3d.com/ScriptReference/WaitForEndOfFrame.html
+                if (!Application.isBatchMode && Application.isPlaying)
+                {
+                    yield return new WaitForEndOfFrame();
+                }
+            }
+        }
+
+        private IEnumerator RunDynamicMeasurementCount()
+        {
+            while (true)
+            {
+                using (Measure.Scope(m_SampleGroup))
+                {
+                    yield return null;
+                }
+                if (SampleCountFulfillsRequirements())
+                    break;
+            }
+        }
+
+        private IEnumerator RunFixedMeasurementCount()
+        {
+            m_DesiredFrameCount = m_Executions > 0 ? m_Executions : m_DesiredFrameCount;
+
+            for (var i = 0; i < m_DesiredFrameCount; i++)
+            {
+                if (m_RecordFrametime)
+                {
+                    using (Measure.Scope(m_SampleGroup))
+                    {
+                        yield return null;
+                    }
+                }
+                else
+                {
+                    yield return null;
+                }
+            }
+        }
+
+        private bool ValidateMeasurementAndWarmupCount()
+        {
+            if (m_DynamicMeasurementCount || m_Executions != 0 || m_Warmup < 0) return true;
+            Debug.LogError("Provide execution count or remove warmup count from frames measurement.");
+            return false;
+
+        }
+
+        private void ValidateCorrectDynamicMeasurementCountUsage()
+        {
+            if (!m_DynamicMeasurementCount)
+                return;
+
+            if (m_Executions > 0)
+            {
+                m_DynamicMeasurementCount = false;
+                Debug.LogWarning("DynamicMeasurementCount will be ignored because MeasurementCount was specified.");
+                return;
+            }
+
+            if (!m_RecordFrametime)
+            {
+                m_DynamicMeasurementCount = false;
+                Debug.LogWarning("DynamicMeasurementCount will be ignored because FrameTime measurement was disabled.");
+            }
+        }
+
+        private bool SampleCountFulfillsRequirements()
+        {
+            var samples = m_SampleGroup.Samples;
+            var sampleCount = samples.Count;
+            var statistics = MeasurementsStatistics.Calculate(samples, m_OutlierMode, m_ConfidenceLevel);
+            var actualError = statistics.MarginOfError;
+            var maxError = m_MaxRelativeError * statistics.Mean;
+
+            if (sampleCount >= k_MinIterations && actualError < maxError)
+                return true;
+
+            if (sampleCount >= k_MaxDynamicMeasurements)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Overrides measurement count based on performance run settings
+        /// </summary>
+        private void SettingsOverride()
+        {
+            var count = RunSettings.Instance.MeasurementCount;
+            if (count < 0) { return; }
+            m_Executions = count;
+            m_Warmup = m_Warmup < 1 ? 0 : count;
+            m_DynamicMeasurementCount = false;
+        }
+
+        private IEnumerator GetDesiredIterationCount()
+        {
+            var executionTime = 0.0D;
+            var iterations = 1;
+
+            while (executionTime < k_MinWarmupTimeMs)
+            {
+                var sw = Stopwatch.GetTimestamp();
+
+                yield return WaitFor(iterations);
+
+                executionTime = TimeSpan.FromTicks(Stopwatch.GetTimestamp() - sw).TotalMilliseconds;
+
+                if (iterations == 1 && executionTime > 40)
+                {
+                    m_DesiredFrameCount = k_MinIterations;
+                    yield break;
+                }
+
+                if (iterations == 64)
+                {
+                    m_DesiredFrameCount = 120;
+                    yield break;
+                }
+
+                if (executionTime < k_MinWarmupTimeMs)
+                {
+                    iterations *= k_ProbingMultiplier;
+                }
+            }
+
+            m_DesiredFrameCount = (int)(k_MinTestTimeMs * iterations / executionTime);
+        }
+
+        private IEnumerator WaitFor(int iterations)
+        {
+            for (var i = 0; i < iterations; i++)
+            {
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Provides a way to measure frame time within a scope.
+        /// </summary>
+        public struct ScopedFrameTimeMeasurement : IDisposable
+        {
+            private readonly FrameTimeMeasurement m_Test;
+
+            /// <summary>
+            /// Initializes a scoped frame time measurement.
+            /// </summary>
+            /// <param name="sampleGroup">Sample group used to store measurements.</param>
+            public ScopedFrameTimeMeasurement(SampleGroup sampleGroup)
+            {
+                var go = new GameObject("Recorder");
+                if (Application.isPlaying) Object.DontDestroyOnLoad(go);
+                m_Test = go.AddComponent<FrameTimeMeasurement>();
+                m_Test.SampleGroup = sampleGroup;
+                PerformanceTest.Disposables.Add(this);
+            }
+
+            /// <summary>
+            /// Initializes a scoped frame time measurement.
+            /// </summary>
+            /// <param name="name">Sample group name used to store measurements.</param>
+            public ScopedFrameTimeMeasurement(string name): this(new SampleGroup(name))
+            {
+            }
+
+            /// <summary>
+            /// Stops scoped frame time measurement and adds it to provided sample group.
+            /// </summary>
+            public void Dispose()
+            {
+                PerformanceTest.Disposables.Remove(this);
+                Object.DestroyImmediate(m_Test.gameObject);
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Measurements/ProfilerMarkerMeasurement.cs
+====================================
+using System.Collections.Generic;
+using Unity.PerformanceTesting.Runtime;
+using UnityEngine;
+
+namespace Unity.PerformanceTesting.Measurements
+{
+    internal class ProfilerMarkerMeasurement : MonoBehaviour
+    {
+        private bool m_MeasurementStarted;
+
+        private readonly List<SampleGroup> m_SampleGroups = new List<SampleGroup>();
+
+        public void AddProfilerSampleGroup(IEnumerable<SampleGroup> sampleGroups)
+        {
+            foreach (var sampleGroup in sampleGroups)
+            {
+                AddProfilerSample(sampleGroup);
+            }
+        }
+
+        private void AddProfilerSample(SampleGroup sampleGroup)
+        {
+            sampleGroup.GetRecorder();
+            sampleGroup.Recorder.enabled = true;
+            m_SampleGroups.Add(sampleGroup);
+        }
+
+        private void SampleProfilerSamples()
+        {
+            foreach (var sampleGroup in m_SampleGroups)
+            {
+                var delta = Utils.ConvertSample(SampleUnit.Nanosecond, sampleGroup.Unit, sampleGroup.Recorder.elapsedNanoseconds);
+                Measure.Custom(sampleGroup, delta);
+            }
+        }
+
+        public void StopAndSampleRecorders()
+        {
+            foreach (var sampleGroup in m_SampleGroups)
+            {
+                sampleGroup.Recorder.enabled = false;
+                var delta = Utils.ConvertSample(SampleUnit.Nanosecond, sampleGroup.Unit, sampleGroup.Recorder.elapsedNanoseconds);
+                Measure.Custom(sampleGroup, delta);
+            }
+        }
+
+        public void Update()
+        {
+            if (!m_MeasurementStarted)
+            {
+                m_MeasurementStarted = true;
+            }
+            else
+            {
+                SampleProfilerSamples();
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Measurements/ScopeMeasurement.cs
+====================================
+using System;
+using System.Diagnostics;
+using Unity.PerformanceTesting.Runtime;
+
+namespace Unity.PerformanceTesting.Measurements
+{
+    /// <summary>
+    /// Measures execution time for the given scope as a single time.
+    /// </summary>
+    public struct ScopeMeasurement : IDisposable
+    {
+        private readonly SampleGroup m_SampleGroup;
+        private readonly long m_StartTicks;
+
+        /// <summary>
+        /// Initializes a scope measurement.
+        /// </summary>
+        /// <param name="sampleGroup">Sample group used to save measurements.</param>
+        public ScopeMeasurement(SampleGroup sampleGroup)
+        {
+            m_SampleGroup = PerformanceTest.GetSampleGroup(sampleGroup.Name);
+            if (m_SampleGroup == null)
+            {
+                m_SampleGroup = sampleGroup;
+                PerformanceTest.Active.SampleGroups.Add(m_SampleGroup);
+            }
+
+            m_StartTicks = Stopwatch.GetTimestamp();
+            PerformanceTest.Disposables.Add(this);
+        }
+
+        /// <summary>
+        /// Initializes a scope measurement.
+        /// </summary>
+        /// <param name="name">Sample group name used for measurements.</param>
+        public ScopeMeasurement(string name) : this(new SampleGroup(name))
+        {
+        }
+
+        /// <summary>
+        /// Stops scope measurement and adds it to provided sample group.
+        /// </summary>
+        public void Dispose()
+        {
+            var elapsedTicks = Stopwatch.GetTimestamp() - m_StartTicks;
+            PerformanceTest.Disposables.Remove(this);
+            var delta = TimeSpan.FromTicks(elapsedTicks).TotalMilliseconds;
+
+            delta = Utils.ConvertSample(SampleUnit.Millisecond, m_SampleGroup.Unit, delta);
+
+            Measure.Custom(m_SampleGroup, delta);
+        }
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/PlayerCallbacks.cs
+====================================
+using UnityEngine.TestRunner;
+using Unity.PerformanceTesting;
+using NUnit.Framework;
+using NUnit.Framework.Interfaces;
+using Unity.PerformanceTesting.Data;
+using Unity.PerformanceTesting.Runtime;
+using UnityEngine.Scripting;
+using UnityEngine;
+
+[assembly: TestRunCallback(typeof(PlayerCallbacks))]
+
+namespace Unity.PerformanceTesting
+{
+    [Preserve]
+    internal class PlayerCallbacks : ITestRunCallback
+    {
+        internal static bool Saved { get; set; }
+
+        public void RunStarted(ITest testsToRun)
+        {
+            // This method is empty because it's part of the NUnit framework's ITestListener interface,
+            // which Unity uses for running tests in the Editor. It receives a parameter "testsToRun" but
+            // doesn't require implementation as Unity can execute tests without it. Developers can add
+            // custom initialization logic if needed.
+        }
+
+        public void RunFinished(ITestResult testResults)
+        {
+            Saved = false;
+        }
+
+        public void TestStarted(ITest test)
+        {
+            // This method is called by Unity when a new test has started. It receives a parameter "test"
+            // which contains information about the test being executed. Developers can add custom logic
+            // in this method, such as logging or setup code for the test.
+        }
+
+        public void TestFinished(ITestResult result)
+        {
+            // This method is called by Unity when a test has finished executing. It receives a parameter
+            // "result" which contains information about the test execution, such as whether the test
+            // passed or failed, and any messages or exceptions thrown during the test. Developers can
+            // add custom logic in this method, such as logging or teardown code for the test.
+        }
+
+        internal static void LogMetadata()
+        {
+            if (Saved) return;
+
+            var run = Metadata.GetFromResources();
+            var json = JsonUtility.ToJson(run);
+            TestContext.Out?.WriteLine("##performancetestruninfo2:" + json);
+            Saved = true;
+        }
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/ResourcesLoader.cs
+====================================
+using System;
+using UnityEngine;
+
+namespace Unity.PerformanceTesting
+{
+    internal static class ResourcesLoader
+    {
+        public static T Load<T>(string assetPath, string prefsKey) where T : class
+        {
+            try
+            {
+                var runResource = Resources.Load<TextAsset>(assetPath.Replace(".json", ""));
+                var json = Application.isEditor ? PlayerPrefs.GetString(prefsKey) : runResource.text;
+                var run = JsonUtility.FromJson<T>(json);
+                return run;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+
+            return null;
+        }
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/TestResultsParser.cs
+====================================
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using Unity.PerformanceTesting.Data;
+using UnityEditor.TestTools.TestRunner.Api;
+using UnityEngine;
+
+namespace Unity.PerformanceTesting.Editor
+{
+    static class TestResultsParser
+    {
+        internal static Run GetPerformanceTestRunData(ITestResultAdaptor testResults)
+        {
+            var testOutputs = GetTestOutputsRecursively(testResults);
+            return ExtractPerformanceRunData(testOutputs);
+        }
+
+        internal static Run GetPerformanceTestRunDataFromXmlFile(string xmlResultsPath)
+        {
+            try
+            {
+                var xmlDocument = XDocument.Load(xmlResultsPath);
+                return GetPerformanceTestRunData(xmlDocument);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("Failed to load performance test results from XML.\n" +
+                    $"{e.GetType()}: {e.Message}\n" +
+                    $"{e.StackTrace}");
+            }
+
+            return null;
+        }
+
+        static Run GetPerformanceTestRunData(XDocument testResults)
+        {
+            var testOutputs = testResults.Descendants("output")
+                .Select(outputElement => outputElement.Value)
+                .ToArray();
+
+            return ExtractPerformanceRunData(testOutputs);
+        }
+
+        static string[] GetTestOutputsRecursively(ITestResultAdaptor testResults)
+        {
+            var res = new List<string>();
+            if (testResults != null)
+            {
+                AccumulateTestRunOutputRecursively(testResults, res);
+            }
+
+            return res.ToArray();
+        }
+
+        static void AccumulateTestRunOutputRecursively(ITestResultAdaptor parentResult, List<string> outputs)
+        {
+            var children = parentResult.Children;
+            foreach (var child in children)
+            {
+                AccumulateTestRunOutputRecursively(child, outputs);
+            }
+
+            var currentTestOutput = parentResult.Output;
+            if (!string.IsNullOrEmpty(currentTestOutput))
+            {
+                outputs.Add(currentTestOutput);
+            }
+        }
+
+        internal static Run ExtractPerformanceRunData(string[] testOutputs)
+        {
+            if (testOutputs == null || testOutputs.Length == 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                var run = ExtractPerformanceTestRunInfo(testOutputs);
+                if (run != null)
+                {
+                    DeserializeTestResults(testOutputs, run);
+                }
+
+                return run;
+            }
+            catch (FormatException fe)
+            {
+                Debug.LogError($"Invalid performance test results format: {fe.Message}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Unexpected exception while reading performance test results: {e.Message}");
+            }
+
+            return null;
+        }
+
+        static Run ExtractPerformanceTestRunInfo(string[] testOutputs)
+        {
+            foreach (var output in testOutputs)
+            {
+                const string pattern = @"##performancetestruninfo2:(.+)\n";
+                var regex = new Regex(pattern);
+                var matches = regex.Match(output);
+                if (matches.Groups.Count == 0 || matches.Captures.Count == 0)
+                {
+                    continue;
+                }
+
+                if (matches.Groups[1].Captures.Count > 1)
+                {
+                    throw new FormatException("Multiple execution metadata instances found.");
+                }
+
+                var json = matches.Groups[1].Value;
+                if (string.IsNullOrEmpty(json))
+                {
+                    throw new FormatException("No execution metadata found.");
+                }
+
+                return ReadPerformanceTestRunJsonObject(json);
+            }
+
+            return null;
+        }
+
+        static Run ReadPerformanceTestRunJsonObject(string json)
+        {
+            try
+            {
+                return JsonUtility.FromJson<Run>(json);
+            }
+            catch (Exception e)
+            {
+                throw new FormatException($"Failed to read performance execution metadata from json string: '{json}'.\n" +
+                    $"Exception: {e.Message}\n" +
+                    $"{e.StackTrace}");
+            }
+        }
+
+        static void DeserializeTestResults(string[] testOutputs, Run run)
+        {
+            foreach (var output in testOutputs)
+            {
+                foreach (var line in output.Split('\n'))
+                {
+                    var json = GetJsonFromHashtag("performancetestresult2", line);
+                    if (json == null)
+                    {
+                        continue;
+                    }
+
+                    var result = ReadPerformanceTestResultJsonObject(json);
+                    if (result != null)
+                    {
+                        run.Results.Add(result);
+                    }
+                }
+            }
+        }
+
+        static PerformanceTestResult ReadPerformanceTestResultJsonObject(string json)
+        {
+            try
+            {
+                return JsonUtility.FromJson<PerformanceTestResult>(json);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to read performance results from json string: '{json}'.\n" +
+                    $"Exception: {e.Message}\n" +
+                    $"{e.StackTrace}");
+            }
+
+            return null;
+        }
+
+        static string GetJsonFromHashtag(string tag, string line)
+        {
+            if (!line.Contains($"##{tag}:"))
+            {
+                return null;
+            }
+
+            var jsonStart = line.IndexOf('{');
+            var openBrackets = 0;
+            var stringIndex = jsonStart;
+            while (openBrackets > 0 || stringIndex == jsonStart)
+            {
+                var character = line[stringIndex];
+                switch (character)
+                {
+                    case '{':
+                        openBrackets++;
+                        break;
+                    case '}':
+                        openBrackets--;
+                        break;
+                }
+
+                stringIndex++;
+            }
+
+            var jsonEnd = stringIndex;
+            return line.Substring(jsonStart, jsonEnd - jsonStart);
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/TestRunBuilder.cs
+====================================
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using Unity.PerformanceTesting.Data;
+using Unity.PerformanceTesting.Editor;
+using Unity.PerformanceTesting.Runtime;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+
+[assembly: PrebuildSetup(typeof(TestRunBuilder))]
+[assembly: PostBuildCleanup(typeof(TestRunBuilder))]
+
+namespace Unity.PerformanceTesting.Editor
+{
+    internal class TestRunBuilder : IPrebuildSetup, IPostBuildCleanup, IPreprocessBuildWithReport, IPostprocessBuildWithReport
+    {
+        private const string cleanResources = "PT_ResourcesCleanup";
+
+        public int callbackOrder
+        {
+            get { return 0; }
+        }
+
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            CreateResourcesFolder();
+
+            var run = CreateBuildInfo();
+            SaveToStorage(run, Utils.TestRunPath);
+
+            var settings = new RunSettings(Environment.GetCommandLineArgs());
+            SaveToStorage(settings, Utils.RunSettingsPath);
+        }
+
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            Cleanup();
+        }
+
+        public void Setup()
+        {
+            EditorPrefs.SetBool(cleanResources, false);
+
+            var run = CreateRunInfo();
+            SaveToPrefs(run, Utils.PlayerPrefKeyRunJSON);
+
+            var settings = new RunSettings(Environment.GetCommandLineArgs());
+            SaveToPrefs(settings, Utils.PlayerPrefKeySettingsJSON);
+        }
+
+#if !UNITY_2021_1_OR_NEWER
+        private static List<string> cachedDependencies;
+#endif
+        static List<string> GetPackageDependencies()
+        {
+#if !UNITY_2021_1_OR_NEWER
+            if (cachedDependencies != null)
+                return cachedDependencies;
+#endif
+
+            IEnumerable<UnityEditor.PackageManager.PackageInfo> packages;
+#if !UNITY_2021_1_OR_NEWER
+            var listRequest = UnityEditor.PackageManager.Client.List(true);
+            while (!listRequest.IsCompleted)
+                System.Threading.Thread.Sleep(10);
+            if (listRequest.Status == UnityEditor.PackageManager.StatusCode.Failure)
+                Debug.LogError("Failed to list local packages");
+            packages = new List<UnityEditor.PackageManager.PackageInfo>(listRequest.Result);
+#else
+            packages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
+#endif
+            var reformated = packages.Select(p => $"{p.name}@{p.version}").ToList();
+#if !UNITY_2021_1_OR_NEWER
+            cachedDependencies = reformated;
+#endif
+            return reformated;
+        }
+
+        public void Cleanup()
+        {
+            DeleteFileAndMeta(Utils.TestRunPath);
+            DeleteFileAndMeta(Utils.RunSettingsPath);
+
+            if (EditorPrefs.GetBool(cleanResources) && Directory.Exists("Assets/Resources"))
+            {
+                Directory.Delete("Assets/Resources/", true);
+                if(File.Exists("Assets/Resources.meta")) {File.Delete("Assets/Resources.meta");}
+            }
+
+            AssetDatabase.Refresh();
+        }
+
+        private void DeleteFileAndMeta(string path)
+        {
+            if (File.Exists(path)) { File.Delete(path); }
+            var metaPath = path + ".meta";
+            if (File.Exists(metaPath)) { File.Delete(metaPath); }
+        }
+
+        private static Data.Editor GetEditorInfo()
+        {
+            var fullVersion = UnityEditorInternal.InternalEditorUtility.GetFullUnityVersion();
+            const string pattern = @"(.+\.+.+\.\w+)|((?<=\().+(?=\)))";
+            var matches = Regex.Matches(fullVersion, pattern);
+
+            return new Data.Editor
+            {
+                Branch = GetEditorBranch(),
+                Version = matches[0].Value,
+                Changeset = matches[1].Value,
+                Date = UnityEditorInternal.InternalEditorUtility.GetUnityVersionDate(),
+            };
+        }
+
+        private static string GetEditorBranch()
+        {
+            foreach (var method in typeof(UnityEditorInternal.InternalEditorUtility).GetMethods())
+            {
+                if (method.Name.Contains("GetUnityBuildBranch"))
+                {
+                    return (string) method.Invoke(null, null);
+                }
+            }
+
+            return "null";
+        }
+
+        private static void SetBuildSettings(Run run)
+        {
+            if (run.Player == null) run.Player = new Player();
+
+            run.Player.GpuSkinning = PlayerSettings.gpuSkinning;
+            #if UNITY_2021_2_OR_NEWER
+            run.Player.ScriptingBackend = PlayerSettings
+                .GetScriptingBackend(NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup)).ToString();
+            #else
+            run.Player.ScriptingBackend = PlayerSettings
+                .GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup).ToString();
+            #endif
+            run.Player.RenderThreadingMode = PlayerSettings.graphicsJobs ? PlayerSettings.graphicsJobMode.ToString() :
+                PlayerSettings.MTRendering ? "MultiThreaded" : "SingleThreaded";
+            run.Player.AndroidTargetSdkVersion = PlayerSettings.Android.targetSdkVersion.ToString();
+            run.Player.AndroidBuildSystem = EditorUserBuildSettings.androidBuildSystem.ToString();
+            run.Player.BuildTarget = EditorUserBuildSettings.activeBuildTarget.ToString();
+            run.Player.StereoRenderingPath = PlayerSettings.stereoRenderingPath.ToString();
+        }
+
+        public Run CreateRunInfo()
+        {
+            var run = new Run();
+            run.Editor = GetEditorInfo();
+            run.Dependencies = GetPackageDependencies();
+            SetBuildSettings(run);
+            run.Date = Utils.ConvertToUnixTimestamp(DateTime.Now);
+
+            return run;
+        }
+        public Run CreateBuildInfo()
+        {
+            var run = new Run();
+            run.Editor = GetEditorInfo();
+            run.Dependencies = GetPackageDependencies();
+            SetBuildSettings(run);
+
+            return run;
+        }
+
+        public Run GetPerformanceTestRun()
+        {
+            var run = CreateRunInfo();
+            Metadata.SetRuntimeSettings(run);
+
+            return run;
+        }
+
+
+        private void CreateResourcesFolder()
+        {
+            if (Directory.Exists(Utils.ResourcesPath))
+            {
+                EditorPrefs.SetBool(cleanResources, false);
+                return;
+            }
+
+            EditorPrefs.SetBool(cleanResources, true);
+            AssetDatabase.CreateFolder("Assets", "Resources");
+        }
+
+        private string SaveToStorage(object obj, string path)
+        {
+            var json = JsonUtility.ToJson(obj);
+            File.WriteAllText(path, json);
+            return json;
+        }
+
+        private string SaveToPrefs(object obj, string key)
+        {
+            var json = JsonUtility.ToJson(obj, true);
+            PlayerPrefs.SetString(key, json);
+            return json;
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/AssemblyInfo.cs
+====================================
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("Unity.PerformanceTesting.Tests.Editor")]
+
+[assembly: AssemblyVersion("3.2.0")]
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/TestResultXmlParser.cs
+====================================
+using System;
+using Unity.PerformanceTesting.Data;
+using UnityEngine;
+
+namespace Unity.PerformanceTesting.Editor
+{
+    /// <summary>
+    /// Helper class to parse test runs into performance test runs.
+    /// </summary>
+    public class TestResultXmlParser
+    {
+        /// <summary>
+        /// Parses performance test run from test run result xml.
+        /// </summary>
+        /// <param name="resultXmlFileName">Path to test results xml file.</param>
+        /// <returns>Performance test run data extracted from the NUnit xml results file.</returns>
+        public Run GetPerformanceTestRunFromXml(string resultXmlFileName)
+        {
+            return TestResultsParser.GetPerformanceTestRunDataFromXmlFile(resultXmlFileName);
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/CmdLineResultsSavingCallbacks.cs
+====================================
+using System;
+using System.IO;
+using UnityEditor.TestTools.TestRunner.Api;
+using UnityEngine;
+
+namespace Unity.PerformanceTesting.Editor
+{
+    [Serializable]
+    class CmdLineResultsSavingCallbacks : ScriptableObject, ICallbacks
+    {
+        [SerializeField]
+        string resultsLocation;
+
+        void ICallbacks.RunStarted(ITestAdaptor testsToRun)
+        {
+            PerformanceTest.Active = null;
+        }
+
+        void ICallbacks.RunFinished(ITestResultAdaptor result)
+        {
+            PlayerCallbacks.Saved = false;
+
+            try
+            {
+                var performanceTestRun = TestResultsParser.GetPerformanceTestRunData(result);
+                if (performanceTestRun == null)
+                {
+                    return;
+                }
+
+                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Saving performance results to: {0}", resultsLocation);
+                var jsonContents = JsonUtility.ToJson(performanceTestRun, true);
+                CreateDirectoryIfNecessary(resultsLocation);
+                File.WriteAllText(resultsLocation, jsonContents);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Saving performance results file failed.");
+                Debug.LogException(e);
+            }
+        }
+
+        static void CreateDirectoryIfNecessary(string filePath)
+        {
+            var directoryPath = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+        }
+
+        void ICallbacks.TestStarted(ITestAdaptor test) { }
+
+        void ICallbacks.TestFinished(ITestResultAdaptor result) { }
+
+        public void SetResultsLocation(string perfTestResultsPath)
+        {
+            resultsLocation = perfTestResultsPath;
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/PerformanceTestBuildAssemblyFilter.cs
+====================================
+using System.Linq;
+using UnityEditor;
+using UnityEditor.Build;
+
+namespace Unity.PerformanceTesting.Editor
+{
+    internal class PerformanceTestBuildAssemblyFilter : IFilterBuildAssemblies
+    {
+        private const string unityTestRunnerAssemblyName = "Unity.PerformanceTesting";
+
+        public int callbackOrder { get; }
+
+        public string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies)
+        {
+            if ((buildOptions & BuildOptions.IncludeTestAssemblies) == BuildOptions.IncludeTestAssemblies)
+            {
+                return assemblies;
+            }
+
+            return assemblies.Where(x => !x.Contains(unityTestRunnerAssemblyName))
+                .ToArray();
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/TestReportGraph/SamplePoint.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting.Editor
+{
+    internal struct SamplePoint : IComparable<SamplePoint>
+    {
+        public double sample;
+        public int index;
+
+        public SamplePoint(double _sample, int _index)
+        {
+            sample = _sample;
+            index = _index;
+        }
+
+        public int CompareTo(SamplePoint other)
+        {
+            return sample.CompareTo(other.sample);
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Editor/TestReportGraph/TestListTable.cs
+====================================

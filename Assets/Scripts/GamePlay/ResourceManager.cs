@@ -103,6 +103,10 @@ public class ResourceManager : MonoBehaviour
     public TextMeshProUGUI gasExtractorCostText;
     public TextMeshProUGUI probeCostText;
 
+    [Header("Building Queue UI")]
+    public Transform buildingQueueContainer;
+    public GameObject buildingQueueRowPrefab;
+
     [Header("Status UI")]
     public TextMeshProUGUI actionStatusText;
     public TextMeshProUGUI upgradeStatusText;
@@ -177,7 +181,7 @@ public class ResourceManager : MonoBehaviour
 
         if (p != null)
         {
-            BuildingUpgradeSystem.TickPlanet(p);
+            BuildingUpgradeSystem.UpdateBuildingUpgrades(gameStateHolder.state, planetId);
             TickShipQueue(p);
 
             p.metal += metalPerSec * Time.deltaTime;
@@ -343,16 +347,40 @@ public class ResourceManager : MonoBehaviour
         }
 
         if (refineryLevelText)
-            refineryLevelText.text = $"Level {refineryLevel} → {refineryLevel + 1}";
+        {
+            int queued = BuildingUpgradeSystem.GetQueuedCount(p, BuildingType.MetalRefinery);
+
+            refineryLevelText.text = queued > 0
+                ? $"Level {refineryLevel} → {refineryLevel + queued}"
+                : $"Level {refineryLevel} → {refineryLevel + 1}";
+        }
 
         if (crystalLevelText)
-            crystalLevelText.text = $"Level {crystalLevel} → {crystalLevel + 1}";
+        {
+            int queued = BuildingUpgradeSystem.GetQueuedCount(p, BuildingType.CrystalMine);
+
+            crystalLevelText.text = queued > 0
+                ? $"Level {crystalLevel} → {crystalLevel + queued}"
+                : $"Level {crystalLevel} → {crystalLevel + 1}";
+        }
 
         if (gasLevelText)
-            gasLevelText.text = $"Level {gasLevel} → {gasLevel + 1}";
+        {
+            int queued = BuildingUpgradeSystem.GetQueuedCount(p, BuildingType.GasExtractor);
+
+            gasLevelText.text = queued > 0
+                ? $"Level {gasLevel} → {gasLevel + queued}"
+                : $"Level {gasLevel} → {gasLevel + 1}";
+        }
 
         if (orbitalShipworksLevelText)
-            orbitalShipworksLevelText.text = $"Level {orbitalShipworksLevel} → {orbitalShipworksLevel + 1}";
+        {
+            int queued = BuildingUpgradeSystem.GetQueuedCount(p, BuildingType.OrbitalShipworks);
+
+            orbitalShipworksLevelText.text = queued > 0
+                ? $"Level {orbitalShipworksLevel} → {orbitalShipworksLevel + queued}"
+                : $"Level {orbitalShipworksLevel} → {orbitalShipworksLevel + 1}";
+        }
 
         if (probeLevelText)
         {
@@ -384,7 +412,7 @@ public class ResourceManager : MonoBehaviour
             p.crystal >= orbitalShipworksCrystalCost &&
             p.gas >= orbitalShipworksGasCost;
 
-        bool buildingBusy = p != null && p.activeBuildingUpgrade != null;
+        bool buildingBusy = false;
 
         if (buildRefineryButton)
             buildRefineryButton.interactable = canAffordRefinery && !buildingBusy;
@@ -410,20 +438,30 @@ public class ResourceManager : MonoBehaviour
         {
             bool showUpgradeText = false;
 
-            if (p != null && p.activeBuildingUpgrade != null)
-            {
-                double remaining = BuildingUpgradeSystem.GetRemainingTime(p);
+        BuildingUpgradeJob activeUpgrade = BuildingUpgradeSystem.GetActiveUpgrade(p);
 
-                if (remaining > 0)
-                {
-                    showUpgradeText = true;
-                    upgradeStatusText.gameObject.SetActive(true);
-                    upgradeStatusText.color = Color.yellow;
-                    upgradeStatusText.text =
-                        $"Upgrading {GetBuildingDisplayName(p.activeBuildingUpgrade.buildingType)}\n" +
-                        $"Remaining: {TimeFormatUtility.FormatDuration(remaining)}";
-                }
+        if (activeUpgrade != null)
+        {
+            double remaining = BuildingUpgradeSystem.GetRemainingTime(gameStateHolder.state, p);
+
+            if (remaining > 0)
+            {
+                int queueCount = p.buildingUpgradeQueue != null
+                    ? p.buildingUpgradeQueue.Count
+                    : 0;
+
+                showUpgradeText = true;
+
+                upgradeStatusText.gameObject.SetActive(true);
+                upgradeStatusText.color = Color.yellow;
+
+                upgradeStatusText.text =
+                    $"Upgrading {GetBuildingDisplayName(activeUpgrade.buildingType)}\n" +
+                    $"Level {activeUpgrade.targetLevel}\n" +
+                    $"Remaining: {TimeFormatUtility.FormatDuration(remaining)}\n" +
+                    $"Queue: {queueCount}";
             }
+        }
 
             if (!showUpgradeText)
             {
@@ -434,101 +472,49 @@ public class ResourceManager : MonoBehaviour
 
         RefreshBasicFighterRow();
         RefreshCargoRows();
+        RefreshBuildingQueueUI();
     }
 
     // Build Methods
     public void TryBuildRefinery()
     {
-        var p = GetPlanet();
-        if (p == null) return;
-
-        if (BuildingUpgradeSystem.TryStartUpgrade(gameStateHolder.state, planetId, BuildingType.MetalRefinery, out string error))
-        {
-            if (actionStatusText)
-            {
-                actionStatusText.color = Color.green;
-                actionStatusText.text = "Refinery upgrade started";
-            }
-        }
-        else
-        {
-            if (actionStatusText)
-            {
-                actionStatusText.color = Color.red;
-                actionStatusText.text = error;
-            }
-        }
-
-        UpdateUI();
+        TryQueueBuildingUpgrade(BuildingType.MetalRefinery, "Metal Refinery");
     }
 
     public void TryBuildCrystalMine()
     {
-        var p = GetPlanet();
-        if (p == null) return;
-
-        if (BuildingUpgradeSystem.TryStartUpgrade(gameStateHolder.state, planetId, BuildingType.CrystalMine, out string error))
-        {
-            if (actionStatusText)
-            {
-                actionStatusText.color = Color.green;
-                actionStatusText.text = "Crystal Mine upgrade started";
-            }
-        }
-        else
-        {
-            if (actionStatusText)
-            {
-                actionStatusText.color = Color.red;
-                actionStatusText.text = error;
-            }
-        }
-
-        UpdateUI();
+        TryQueueBuildingUpgrade(BuildingType.CrystalMine, "Crystal Mine");
     }
 
     public void TryBuildGasExtractor()
     {
-        var p = GetPlanet();
-        if (p == null) return;
-
-        if (BuildingUpgradeSystem.TryStartUpgrade(gameStateHolder.state, planetId, BuildingType.GasExtractor, out string error))
-        {
-            if (actionStatusText)
-            {
-                actionStatusText.color = Color.green;
-                actionStatusText.text = "Gas Extractor upgrade started";
-            }
-        }
-        else
-        {
-            if (actionStatusText)
-            {
-                actionStatusText.color = Color.red;
-                actionStatusText.text = error;
-            }
-        }
-
-        UpdateUI();
+        TryQueueBuildingUpgrade(BuildingType.GasExtractor, "Gas Extractor");
     }
 
     public void TryBuildOrbitalShipworks()
     {
+        TryQueueBuildingUpgrade(BuildingType.OrbitalShipworks, "Orbital Shipworks");
+    }
+
+    private void TryQueueBuildingUpgrade(BuildingType buildingType, string displayName)
+    {
         var p = GetPlanet();
         if (p == null) return;
 
-        if (BuildingUpgradeSystem.TryStartUpgrade(gameStateHolder.state, planetId, BuildingType.OrbitalShipworks, out string error))
+        if (BuildingUpgradeSystem.TryQueueUpgrade(gameStateHolder.state, planetId, buildingType, out string error))
         {
             if (actionStatusText)
             {
+                actionStatusText.gameObject.SetActive(true);
                 actionStatusText.color = Color.green;
-                actionStatusText.text = "Orbital Shipworks upgrade started";
+                actionStatusText.text = $"{displayName} upgrade queued";
             }
         }
         else
         {
             if (actionStatusText)
             {
+                actionStatusText.gameObject.SetActive(true);
                 actionStatusText.color = Color.red;
                 actionStatusText.text = error;
             }
@@ -1143,6 +1129,48 @@ public class ResourceManager : MonoBehaviour
 
         if (smallCargoOwnedText) smallCargoOwnedText.text = $"Owned: {sc}";
         if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {lc}";
+    }
+
+    private void RefreshBuildingQueueUI()
+    {
+        if (buildingQueueContainer == null || buildingQueueRowPrefab == null)
+            return;
+
+        foreach (Transform child in buildingQueueContainer)
+            Destroy(child.gameObject);
+
+        var p = GetPlanet();
+        var state = gameStateHolder != null ? gameStateHolder.state : null;
+
+        if (p == null || state == null || p.buildingUpgradeQueue == null)
+            return;
+
+        for (int i = 0; i < p.buildingUpgradeQueue.Count; i++)
+        {
+            BuildingUpgradeJob job = p.buildingUpgradeQueue[i];
+
+            GameObject rowObj = Instantiate(buildingQueueRowPrefab, buildingQueueContainer);
+
+            BuildingQueueRowUI rowUI = rowObj.GetComponent<BuildingQueueRowUI>();
+
+            if (rowUI != null)
+                rowUI.Bind(job, state, i, CancelBuildingUpgrade);
+        }
+    }
+
+    private void CancelBuildingUpgrade(int index)
+    {
+        var p = GetPlanet();
+
+        if (p == null || p.buildingUpgradeQueue == null)
+            return;
+
+        if (index < 0 || index >= p.buildingUpgradeQueue.Count)
+            return;
+
+        p.buildingUpgradeQueue.RemoveAt(index);
+
+        UpdateUI();
     }
 
     public void OpenBuild()

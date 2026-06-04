@@ -1,45 +1,45 @@
-using System;
+using UnityEngine;
 
 public static class BuildingUpgradeSystem
 {
-    public static bool IsUpgradeInProgress(PlanetState planet)
-    {
-        return planet != null && planet.activeBuildingUpgrade != null;
-    }
-
-    public static bool TryStartUpgrade(GameState state, string planetId, BuildingType type, out string error)
+    public static bool TryQueueUpgrade(
+    GameState state,
+    string planetId,
+    BuildingType buildingType,
+    out string error)
     {
         error = null;
 
         if (state == null)
         {
-            error = "State is null.";
+            Debug.LogError("TryQueueUpgrade failed: state is null.");
             return false;
         }
 
-        var planet = state.GetPlanet(planetId);
+        PlanetState planet = state.GetPlanet(planetId);
+
         if (planet == null)
         {
-            error = "Planet not found.";
+            Debug.LogError($"TryQueueUpgrade failed: planet '{planetId}' not found.");
             return false;
         }
 
-        if (planet.activeBuildingUpgrade != null)
+        if (planet.buildingUpgradeQueue == null)
         {
-            error = "Another building upgrade is already in progress.";
-            return false;
+            planet.buildingUpgradeQueue = new System.Collections.Generic.List<BuildingUpgradeJob>();
         }
 
-        int currentLevel = GetBuildingLevel(planet, type);
+        int currentLevel = GetBuildingLevel(planet, buildingType);
+        int queuedCount = GetQueuedCount(planet, buildingType);
+        int targetLevel = currentLevel + queuedCount + 1;
 
-        double metalCost = BuildingBalance.GetMetalCost(type, currentLevel);
-        double crystalCost = BuildingBalance.GetCrystalCost(type, currentLevel);
-        double gasCost = BuildingBalance.GetGasCost(type, currentLevel);
-        double buildTime = BuildingBalance.GetBuildTimeSeconds(type, currentLevel);
+        double metalCost = BuildingBalance.GetMetalCost(buildingType, targetLevel);
+        double crystalCost = BuildingBalance.GetCrystalCost(buildingType, targetLevel);
+        double gasCost = BuildingBalance.GetGasCost(buildingType, targetLevel);
 
         if (planet.metal < metalCost || planet.crystal < crystalCost || planet.gas < gasCost)
         {
-            error = "Not enough resources.";
+            error = $"Not enough resources for {buildingType} Level {targetLevel}.";
             return false;
         }
 
@@ -47,66 +47,163 @@ public static class BuildingUpgradeSystem
         planet.crystal -= crystalCost;
         planet.gas -= gasCost;
 
-        double now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        double durationSeconds = BuildingBalance.GetBuildTimeSeconds(buildingType, targetLevel);
 
-        planet.activeBuildingUpgrade = new BuildingUpgradeJob
+        BuildingUpgradeJob job = new BuildingUpgradeJob
         {
-            buildingType = type,
-            targetLevel = currentLevel + 1,
-            startTimeUtc = now,
-            completeTimeUtc = now + buildTime
+            buildingType = buildingType,
+            targetLevel = targetLevel,
+            durationSeconds = durationSeconds,
+            started = false,
+            startTimeUtc = 0,
+            completeTimeUtc = 0
         };
 
+        planet.buildingUpgradeQueue.Add(job);
+
+        TryStartNextUpgrade(state, planet);
+
+        Debug.Log($"Queued {buildingType} upgrade to level {targetLevel}.");
+
+        error = null;
         return true;
     }
 
-    public static void TickPlanet(PlanetState planet)
+        public static double GetRemainingTime(GameState state, PlanetState planet)
     {
-        if (planet == null || planet.activeBuildingUpgrade == null) return;
+        if (state == null || planet == null)
+            return 0;
 
-        double now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        if (now < planet.activeBuildingUpgrade.completeTimeUtc) return;
+        BuildingUpgradeJob activeJob = GetActiveUpgrade(planet);
 
-        var job = planet.activeBuildingUpgrade;
+        if (activeJob == null)
+            return 0;
 
-        SetBuildingLevel(planet, job.buildingType, job.targetLevel);
-
-        planet.activeBuildingUpgrade = null;
+        return System.Math.Max(0, activeJob.completeTimeUtc - state.gameTime);
     }
 
-    public static double GetRemainingTime(PlanetState planet)
+    public static void UpdateBuildingUpgrades(GameState state, string planetId)
     {
-        if (planet == null || planet.activeBuildingUpgrade == null) return 0;
+        if (state == null) return;
 
-        double now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        return System.Math.Max(0, planet.activeBuildingUpgrade.completeTimeUtc - now);
-    }
+        PlanetState planet = state.GetPlanet(planetId);
+        if (planet == null) return;
 
-    private static int GetBuildingLevel(PlanetState planet, BuildingType type)
-    {
-        switch (type)
+        if (planet.buildingUpgradeQueue == null || planet.buildingUpgradeQueue.Count == 0)
+            return;
+
+        BuildingUpgradeJob activeJob = planet.buildingUpgradeQueue[0];
+
+        if (!activeJob.started)
         {
-            case BuildingType.MetalRefinery: return planet.metalRefineryLevel;
-            case BuildingType.CrystalMine: return planet.crystalMineLevel;
-            case BuildingType.GasExtractor: return planet.gasExtractorLevel;
-            case BuildingType.OrbitalShipworks: return planet.orbitalShipworksLevel;
-            default: return 0;
+            StartJob(state, activeJob);
+        }
+
+        if (state.gameTime >= activeJob.completeTimeUtc)
+        {
+            CompleteJob(planet, activeJob);
+
+            planet.buildingUpgradeQueue.RemoveAt(0);
+
+            TryStartNextUpgrade(state, planet);
         }
     }
 
-    private static void SetBuildingLevel(PlanetState planet, BuildingType type, int level)
+    public static BuildingUpgradeJob GetActiveUpgrade(PlanetState planet)
     {
-        switch (type)
+        if (planet == null) return null;
+        if (planet.buildingUpgradeQueue == null) return null;
+        if (planet.buildingUpgradeQueue.Count == 0) return null;
+
+        BuildingUpgradeJob job = planet.buildingUpgradeQueue[0];
+
+        if (!job.started) return null;
+
+        return job;
+    }
+
+    public static int GetQueuedCount(PlanetState planet, BuildingType buildingType)
+    {
+        if (planet == null || planet.buildingUpgradeQueue == null)
+            return 0;
+
+        int count = 0;
+
+        foreach (BuildingUpgradeJob job in planet.buildingUpgradeQueue)
+        {
+            if (job.buildingType == buildingType)
+                count++;
+        }
+
+        return count;
+    }
+
+    private static void TryStartNextUpgrade(GameState state, PlanetState planet)
+    {
+        if (planet == null) return;
+        if (planet.buildingUpgradeQueue == null || planet.buildingUpgradeQueue.Count == 0) return;
+
+        BuildingUpgradeJob nextJob = planet.buildingUpgradeQueue[0];
+
+        if (!nextJob.started)
+        {
+            StartJob(state, nextJob);
+        }
+    }
+
+    private static void StartJob(GameState state, BuildingUpgradeJob job)
+    {
+        job.started = true;
+        job.startTimeUtc = state.gameTime;
+        job.completeTimeUtc = state.gameTime + job.durationSeconds;
+
+        Debug.Log($"Started {job.buildingType} upgrade to level {job.targetLevel}.");
+    }
+
+    private static void CompleteJob(PlanetState planet, BuildingUpgradeJob job)
+    {
+        SetBuildingLevel(planet, job.buildingType, job.targetLevel);
+
+        Debug.Log($"Completed {job.buildingType} upgrade to level {job.targetLevel}.");
+    }
+
+    private static int GetBuildingLevel(PlanetState planet, BuildingType buildingType)
+    {
+        switch (buildingType)
+        {
+            case BuildingType.MetalRefinery:
+                return planet.metalRefineryLevel;
+
+            case BuildingType.CrystalMine:
+                return planet.crystalMineLevel;
+
+            case BuildingType.GasExtractor:
+                return planet.gasExtractorLevel;
+
+            case BuildingType.OrbitalShipworks:
+                return planet.orbitalShipworksLevel;
+
+            default:
+                return 0;
+        }
+    }
+
+    private static void SetBuildingLevel(PlanetState planet, BuildingType buildingType, int level)
+    {
+        switch (buildingType)
         {
             case BuildingType.MetalRefinery:
                 planet.metalRefineryLevel = level;
                 break;
+
             case BuildingType.CrystalMine:
                 planet.crystalMineLevel = level;
                 break;
+
             case BuildingType.GasExtractor:
                 planet.gasExtractorLevel = level;
                 break;
+
             case BuildingType.OrbitalShipworks:
                 planet.orbitalShipworksLevel = level;
                 break;

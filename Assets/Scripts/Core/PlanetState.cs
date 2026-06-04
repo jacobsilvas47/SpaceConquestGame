@@ -59,8 +59,9 @@ using System.Collections.Generic;
     // Ship Queue
     public List<ShipQueueItem> shipQueue = new List<ShipQueueItem>();
 
-    // Active building upgrade
+    // Buildings
     public BuildingUpgradeJob activeBuildingUpgrade;
+    public List<BuildingUpgradeJob> buildingUpgradeQueue = new List<BuildingUpgradeJob>();
 
     public PlanetState(string planetId)
     {

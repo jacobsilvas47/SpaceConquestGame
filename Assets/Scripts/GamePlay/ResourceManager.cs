@@ -472,7 +472,7 @@ public class ResourceManager : MonoBehaviour
 
         RefreshBasicFighterRow();
         RefreshCargoRows();
-        RefreshBuildingQueueUI();
+        //RefreshBuildingQueueUI();
     }
 
     // Build Methods
@@ -509,6 +509,8 @@ public class ResourceManager : MonoBehaviour
                 actionStatusText.color = Color.green;
                 actionStatusText.text = $"{displayName} upgrade queued";
             }
+
+            RefreshBuildingQueueUI();
         }
         else
         {
@@ -1168,8 +1170,11 @@ public class ResourceManager : MonoBehaviour
         if (index < 0 || index >= p.buildingUpgradeQueue.Count)
             return;
 
+        Debug.Log($"Canceling building queue item at index {index}");
+
         p.buildingUpgradeQueue.RemoveAt(index);
 
+        RefreshBuildingQueueUI();
         UpdateUI();
     }
 

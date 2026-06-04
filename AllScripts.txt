@@ -1,0 +1,875 @@
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Statistics/NormalDistributionHelper.cs
+====================================
+using System;
+using static System.Math;
+
+namespace Unity.PerformanceTesting.Statistics
+{
+    static class NormalDistributionHelper
+    {
+        /// <summary>
+        /// ACM Algorithm 209: Gauss
+        ///
+        /// Calculates $(1/\sqrt{2\pi}) \int_{-\infty}^x e^{-u^2 / 2} du$
+        /// by means of polynomial approximations due to A. M. Murray of Aberdeen University;
+        ///
+        /// See: http://dl.acm.org/citation.cfm?id=367664
+        /// </summary>
+        /// <param name="x">-infinity..+infinity</param>
+        /// <returns>Area under the Standard Normal Curve from -infinity to x</returns>
+        public static double Gauss(double x)
+        {
+            double z;
+            if (Abs(x) < 1e-9)
+                z = 0.0;
+            else
+            {
+                var y = Abs(x) / 2;
+                if (y >= 3.0)
+                    z = 1.0;
+                else if (y < 1.0)
+                {
+                    var w = y * y;
+                    z = ((((((((0.000124818987 * w - 0.001075204047) * w
+                        + 0.005198775019) * w - 0.019198292004) * w
+                        + 0.059054035642) * w - 0.151968751364) * w
+                        + 0.319152932694) * w - 0.531923007300) * w
+                        + 0.797884560593) * y * 2.0;
+                }
+                else
+                {
+                    y = y - 2.0;
+                    z = (((((((((((((-0.000045255659 * y + 0.000152529290) * y
+                        - 0.000019538132) * y - 0.000676904986) * y
+                        + 0.001390604284) * y - 0.000794620820) * y
+                        - 0.002034254874) * y + 0.006549791214) * y
+                        - 0.010557625006) * y + 0.011630447319) * y
+                        - 0.009279453341) * y + 0.005353579108) * y
+                        - 0.002141268741) * y + 0.000535310849) * y
+                        + 0.999936657524;
+                }
+            }
+
+            return x > 0.0 ? (z + 1.0) / 2 : (1.0 - z) / 2;
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Statistics/ConfidenceLevel.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting.Statistics
+{
+    /// <summary>
+    /// Represents a statistical confidence level.
+    /// </summary>
+    public enum ConfidenceLevel
+    {
+        /// <summary>
+        /// 90.0% confidence interval
+        /// </summary>
+        L90,
+
+        /// <summary>
+        /// 95.0% confidence interval
+        /// </summary>
+        L95,
+
+        /// <summary>
+        /// 99.0% confidence interval
+        /// </summary>
+        L99,
+
+        /// <summary>
+        /// 99.9% confidence interval
+        /// </summary>
+        L999
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Statistics/StudentDistributionHelper.cs
+====================================
+using System;
+using static System.Math;
+
+namespace Unity.PerformanceTesting.Statistics
+{
+    static class StudentDistributionHelper
+    {
+        public static double InverseTwoTailedStudent(double p, double n)
+        {
+            var lower = 0.0;
+            var upper = 1000.0;
+            while (upper - lower > 1e-9)
+            {
+                var t = (lower + upper) / 2;
+                var p2 = TwoTailedStudent(t, n);
+                if (p2 < p)
+                    upper = t;
+                else
+                    lower = t;
+            }
+
+            return (lower + upper) / 2;
+        }
+
+        /// <summary>
+        /// ACM Algorithm 395: Student's t-distribution
+        ///
+        /// Evaluates the two-tail probability P(t|n) that t is exceeded
+        /// in magnitude for Student's t-distribution with n degrees of freedom.
+        ///
+        /// http://dl.acm.org/citation.cfm?id=355599
+        /// </summary>
+        /// <param name="t">t-value, t > 0</param>
+        /// <param name="n">Degree of freedom, n >= 1</param>
+        /// <returns>2-tail p-value</returns>
+        static double TwoTailedStudent(double t, double n)
+        {
+            if (t < 0)
+                throw new ArgumentOutOfRangeException(nameof(t), "t should be >= 0");
+            if (n < 1)
+                throw new ArgumentOutOfRangeException(nameof(n), "n should be >= 1");
+
+            t = t * t;
+            var y = t / n;
+            var b = y + 1.0;
+            var nn = (int)Round(n);
+            if (Abs(n - nn) > 1e-9 || n >= 20 || t < n && n > 200)
+            {
+                if (y > 1.0e-6)
+                    y = Log(b);
+                var a = n - 0.5;
+                b = 48.0 * (a * a);
+                y = a * y;
+                y = (((((-0.4 * y - 3.3) * y - 24.0) * y - 85.5) / (0.8 * (y * y) + 100.0 + b) + y + 3.0) / b + 1.0) * Sqrt(y);
+                return 2 * NormalDistributionHelper.Gauss(-y);
+            }
+
+            {
+                double z = 1;
+
+                double a;
+                if (n < 20 && t < 4.0)
+                {
+                    y = Sqrt(y);
+                    a = y;
+                    if (nn == 1)
+                        a = 0;
+                }
+                else
+                {
+                    a = Sqrt(b);
+                    y = a * nn;
+                    var j = 0;
+                    while (Abs(a - z) > 0)
+                    {
+                        j += 2;
+                        z = a;
+                        y *= (j - 1) / (b * j);
+                        a += y / (nn + j);
+                    }
+
+                    nn += 2;
+                    z = 0;
+                    y = 0;
+                    a = -a;
+                }
+
+                while (true)
+                {
+                    nn -= 2;
+                    if (nn > 1)
+                        a = (nn - 1) / (b * nn) * a + y;
+                    else
+                        break;
+                }
+
+                a = nn == 0 ? a / Sqrt(b) : (Atan(y) + a / b) * 2 / PI;
+                return z - a;
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Statistics/OutlierMode.cs
+====================================
+using System;
+
+namespace Unity.PerformanceTesting.Statistics
+{
+    /// <summary>
+    /// Outlier removal mode.
+    /// </summary>
+    public enum OutlierMode
+    {
+        /// <summary>
+        /// Do not remove outliers.
+        /// </summary>
+        DontRemove,
+
+        /// <summary>
+        /// Remove outliers using the Tukey fences method.
+        /// </summary>
+        Remove
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Statistics/MeasurementsStatistics.cs
+====================================
+using System;
+using System.Collections.Generic;
+
+namespace Unity.PerformanceTesting.Statistics
+{
+    /// <summary>
+    /// Provides basic measurement statistics calculated for a sample collection.
+    /// </summary>
+    readonly ref struct MeasurementsStatistics
+    {
+        /// <summary>
+        /// Mean of the samples.
+        /// </summary>
+        public double Mean { get; }
+
+        /// <summary>
+        /// Margin of error within the requested confidence interval.
+        /// </summary>
+        public double MarginOfError { get; }
+
+        MeasurementsStatistics(double mean, double marginOfError)
+        {
+            Mean = mean;
+            MarginOfError = marginOfError;
+        }
+
+        /// <summary>
+        /// Calculates basic measurement statistics for a sample collection.
+        /// </summary>
+        /// <param name="measurements">The sample collection.</param>
+        /// <param name="outlierMode">Outlier removal mode.</param>
+        /// <param name="confidenceLevel">Confidence interval for calculating the margin of error.</param>
+        /// <returns>A MeasurementStatistics instance calculated for the provided data.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the sample count is zero.</exception>
+        public static MeasurementsStatistics Calculate(List<double> measurements, OutlierMode outlierMode, ConfidenceLevel confidenceLevel)
+        {
+            var n = measurements.Count;
+            if (n == 0)
+                throw new InvalidOperationException("Requesting statistic measurements of a sequence which contains no elements.");
+
+            double sum;
+            double mean;
+            double variance;
+            double standardDeviation;
+            double standardError;
+            double marginOfError;
+
+            if (outlierMode == OutlierMode.DontRemove)
+            {
+                sum = Sum(measurements);
+                mean = sum / n;
+                variance = Variance(measurements, n, mean);
+                standardDeviation = Math.Sqrt(variance);
+                standardError = standardDeviation / Math.Sqrt(n);
+                marginOfError = n <= 2 ? double.NaN : standardError * confidenceLevel.GetZValue(n);
+
+                return new MeasurementsStatistics(mean, marginOfError);
+            }
+
+            measurements.Sort();
+
+            double q1, q3;
+            if (n == 1)
+                q1 = q3 = measurements[0];
+            else
+            {
+                q1 = GetQuartile(measurements, measurements.Count / 2);
+                q3 = GetQuartile(measurements, measurements.Count * 3 / 2);
+            }
+
+            var interquartileRange = q3 - q1;
+            var lowerFence = q1 - 1.5 * interquartileRange;
+            var upperFence = q3 + 1.5 * interquartileRange;
+
+            SumWithoutOutliers(outlierMode, measurements, lowerFence, upperFence, out sum, out n);
+            mean = sum / n;
+            variance = VarianceWithoutOutliers(outlierMode, measurements, n, mean, lowerFence, upperFence);
+            standardDeviation = Math.Sqrt(variance);
+            standardError = standardDeviation / Math.Sqrt(n);
+            marginOfError = n <= 2 ? double.NaN : standardError * confidenceLevel.GetZValue(n);
+
+            return new MeasurementsStatistics(mean, marginOfError);
+        }
+
+        static double Sum(List<double> measurements)
+        {
+            var sum = 0d;
+            foreach (var m in measurements)
+            {
+                sum += m;
+            }
+
+            return sum;
+        }
+
+        static void SumWithoutOutliers(OutlierMode outlierMode, List<double> measurements,
+            double lowerFence, double upperFence, out double sum, out int n)
+        {
+            sum = 0;
+            n = 0;
+
+            foreach (var m in measurements)
+            {
+                if (!IsOutlier(outlierMode, m, lowerFence, upperFence))
+                {
+                    sum += m;
+                    ++n;
+                }
+            }
+        }
+
+        static double Variance(List<double> measurements, int n, double mean)
+        {
+            if (n == 1)
+            {
+                return 0;
+            }
+
+            double variance = 0;
+            foreach (var m in measurements)
+            {
+                variance += (m - mean) * (m - mean) / (n - 1);
+            }
+
+            return variance;
+        }
+
+        static double VarianceWithoutOutliers(OutlierMode outlierMode, List<double> measurements, int n, double mean, double lowerFence, double upperFence)
+        {
+            if (n == 1)
+            {
+                return 0;
+            }
+
+            double variance = 0;
+            foreach (var m in measurements)
+            {
+                if (!IsOutlier(outlierMode, m, lowerFence, upperFence))
+                {
+                    variance += (m - mean) * (m - mean) / (n - 1);
+                }
+            }
+
+            return variance;
+        }
+
+        static double GetQuartile(List<double> measurements, int count)
+        {
+            if (count % 2 == 0)
+            {
+                return (measurements[count / 2 - 1] + measurements[count / 2]) / 2;
+            }
+
+            return measurements[count / 2];
+        }
+
+        static bool IsOutlier(OutlierMode outlierMode, double value, double lowerFence, double upperFence)
+        {
+            switch (outlierMode)
+            {
+                case OutlierMode.DontRemove:
+                    return false;
+                case OutlierMode.Remove:
+                    return value < lowerFence || value > upperFence;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(outlierMode), outlierMode, "Unknown OutlierMode value.");
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Statistics/ConfidenceLevelExtensions.cs
+====================================
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Unity.PerformanceTesting.Statistics
+{
+    static class ConfidenceLevelExtensions
+    {
+        private static readonly Dictionary<ConfidenceLevel, (int value, int digits)> k_ConfidenceLevelDetails = CreateConfidenceLevelMapping();
+
+        /// <summary>
+        /// Calculates Z value (z-star) for confidence interval
+        /// </summary>
+        /// <param name="level">ConfidenceLevel for a confidence interval</param>
+        /// <param name="n">Sample size (n >= 3)</param>
+        public static double GetZValue(this ConfidenceLevel level, int n)
+        {
+            if (n <= 1)
+                throw new ArgumentOutOfRangeException(nameof(n), "n should be >= 2");
+            return StudentDistributionHelper.InverseTwoTailedStudent(1 - level.ToPercent(), n - 1);
+        }
+
+        static double ToPercent(this ConfidenceLevel level)
+        {
+            (int value, int digits) = k_ConfidenceLevelDetails[level];
+
+            return value / Math.Pow(10, digits);
+        }
+
+        static Dictionary<ConfidenceLevel, (int value, int length)> CreateConfidenceLevelMapping()
+        {
+            return Enum.GetValues(typeof(ConfidenceLevel))
+                .Cast<ConfidenceLevel>()
+                .ToDictionary(
+                    confidenceLevel => confidenceLevel,
+                    confidenceLevel =>
+                    {
+                        var textRepresentation = confidenceLevel.ToString().Substring(1);
+                        return (int.Parse(textRepresentation), textRepresentation.Length);
+                    });
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/AssemblyInfo.cs
+====================================
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
+[assembly: AssemblyTitle("Unity.PerformanceTesting")]
+
+[assembly: InternalsVisibleTo("Unity.PerformanceTesting.Editor")]
+[assembly: InternalsVisibleTo("Unity.PerformanceTesting.Tests.Runtime")]
+[assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Testing.Editor")]
+
+[assembly: AssemblyVersion("3.2.0")]
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/PerformanceTestHelper.cs
+====================================
+using UnityEngine;
+
+namespace Unity.PerformanceTesting
+{
+    internal class PerformanceTestHelper : MonoBehaviour
+    {
+        [SerializeField]
+        public PerformanceTest ActiveTest;
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Measure.cs
+====================================
+using System;
+using System.Diagnostics;
+using Unity.PerformanceTesting.Exceptions;
+using Unity.PerformanceTesting.Measurements;
+using Unity.PerformanceTesting.Runtime;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+namespace Unity.PerformanceTesting
+{
+    /// <summary>
+    /// Enables measuring of performance metrics during a performance test.
+    /// </summary>
+    public static class Measure
+    {
+        /// <summary>
+        /// Saves provided value as a performance measurement.
+        /// </summary>
+        /// <param name="sampleGroup">The sample group to save the value to.</param>
+        /// <param name="value">Value to be saved.</param>
+        public static void Custom(SampleGroup sampleGroup, double value)
+        {
+            VerifyValue(sampleGroup.Name, value);
+
+            var activeSampleGroup = PerformanceTest.GetSampleGroup(sampleGroup.Name);
+            if (activeSampleGroup == null)
+            {
+                PerformanceTest.AddSampleGroup(sampleGroup);
+                activeSampleGroup = sampleGroup;
+            }
+
+            activeSampleGroup.Samples.Add(value);
+        }
+
+        /// <summary>
+        /// Saves provided value as a performance measurement.
+        /// </summary>
+        /// <param name="name">The name of the sample group to save the value to.</param>
+        /// <param name="value">Value to be saved.</param>
+        public static void Custom(string name, double value)
+        {
+            VerifyValue(name, value);
+
+            var activeSampleGroup = PerformanceTest.GetSampleGroup(name);
+            if (activeSampleGroup == null)
+            {
+                activeSampleGroup = new SampleGroup(name);
+                PerformanceTest.AddSampleGroup(activeSampleGroup);
+            }
+
+            activeSampleGroup.Samples.Add(value);
+        }
+
+        static void VerifyValue(string name, double value)
+        {
+            if (double.IsNaN(value))
+                throw new PerformanceTestException(
+                    $"Trying to record value which is not a number for sample group: {name}");
+        }
+
+        /// <summary>
+        /// Measures execution time for the given scope as a single time.
+        /// </summary>
+        /// <param name="name">Name to use for the sample group.</param>
+        /// <returns>IDisposable <see cref="ScopeMeasurement"/> on which you should call the <see cref="ScopeMeasurement.Dispose"/> method to stop measurement.</returns>
+        public static ScopeMeasurement Scope(string name = "Time")
+        {
+            return new ScopeMeasurement(name);
+        }
+
+        /// <summary>
+        /// Measures execution time for the given scope as a single time.
+        /// </summary>
+        /// <param name="sampleGroup">Sample group to use to save samples to.</param>
+        /// <returns>IDisposable <see cref="ScopeMeasurement"/> on which you should call the <see cref="ScopeMeasurement.Dispose"/> method to stop measurement.</returns>
+        public static ScopeMeasurement Scope(SampleGroup sampleGroup)
+        {
+            return new ScopeMeasurement(sampleGroup);
+        }
+
+        /// <summary>
+        /// Measures profiler markers for the given scope.
+        /// </summary>
+        /// <param name="profilerMarkerLabels">List of profiler marker names.</param>
+        /// <returns>A ProfilerMeasurement instance configured according to the given arguments.</returns>
+        public static ProfilerMeasurement ProfilerMarkers(params string[] profilerMarkerLabels)
+        {
+            return new ProfilerMeasurement(profilerMarkerLabels);
+        }
+
+        /// <summary>
+        /// Measures profiler markers for the given scope.
+        /// </summary>
+        /// <param name="sampleGroups">List of SampleGroups where the name matches the profiler marker to measure.</param>
+        /// <returns>A ProfilerMeasurement instance configured according to the given arguments.</returns>
+        public static ProfilerMeasurement ProfilerMarkers(params SampleGroup[] sampleGroups)
+        {
+            return new ProfilerMeasurement(sampleGroups);
+        }
+
+        /// <summary>
+        /// Measures execution time for a method with given parameters.
+        /// </summary>
+        /// <param name="action">The action to be measured.</param>
+        /// <returns><see cref="MethodMeasurement"/>using a builder pattern to provide parameters. Call <see cref="ScopeMeasurement.Run"/> to start measurement.</returns>
+        public static MethodMeasurement Method(Action action)
+        {
+            return new MethodMeasurement(action);
+        }
+
+        /// <summary>
+        /// Measures frame times with given parameters.
+        /// </summary>
+        /// <returns><see cref="FramesMeasurement"/> using a builder pattern to provide parameters. Call <see cref="FramesMeasurement.Run"/> method to start measurement.</returns>
+        public static FramesMeasurement Frames()
+        {
+            return new FramesMeasurement();
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Metadata.cs
+====================================
+using System;
+using System.Globalization;
+using Unity.PerformanceTesting.Data;
+using Unity.PerformanceTesting.Runtime;
+using UnityEngine;
+#if USE_CUSTOM_METADATA
+using com.unity.test.metadatamanager;
+#endif
+
+namespace Unity.PerformanceTesting
+{
+    /// <summary>
+    /// Helper class to retrieve metadata information about player settings and hardware.
+    /// </summary>
+    public static class Metadata
+    {
+        /// <summary>
+        /// Gets hardware information.
+        /// </summary>
+        /// <returns>Hardware information.</returns>
+        public static Hardware GetHardware()
+        {
+            return new Hardware
+            {
+                OperatingSystem = SystemInfo.operatingSystem,
+                DeviceModel = SystemInfo.deviceModel,
+                DeviceName = SystemInfo.deviceName,
+                ProcessorType = SystemInfo.processorType,
+                ProcessorCount = SystemInfo.processorCount,
+                GraphicsDeviceName = SystemInfo.graphicsDeviceName,
+                SystemMemorySizeMB = SystemInfo.systemMemorySize
+            };
+        }
+
+        /// <summary>
+        /// Sets player settings.
+        /// </summary>
+        /// <param name="run">Run used to set settings.</param>
+        public static void SetPlayerSettings(Run run)
+        {
+            run.Player.Vsync = QualitySettings.vSyncCount;
+            run.Player.AntiAliasing = QualitySettings.antiAliasing;
+            run.Player.ColorSpace = QualitySettings.activeColorSpace.ToString();
+            run.Player.AnisotropicFiltering = QualitySettings.anisotropicFiltering.ToString();
+            run.Player.BlendWeights = QualitySettings.skinWeights.ToString();
+            #if UNITY_2022_2_OR_NEWER
+            run.Player.ScreenRefreshRate = (int)Math.Round(Screen.currentResolution.refreshRateRatio.value); // casting to int and rounding to ensure backwards compatibility with older package versions
+            #else
+            run.Player.ScreenRefreshRate = Screen.currentResolution.refreshRate;
+            #endif
+            run.Player.ScreenWidth = Screen.currentResolution.width;
+            run.Player.ScreenHeight = Screen.currentResolution.height;
+            run.Player.Fullscreen = Screen.fullScreen;
+            run.Player.Batchmode = Application.isBatchMode;
+            run.Player.Development = Application.isEditor || Debug.isDebugBuild;
+            run.Player.Platform = Application.platform.ToString();
+            run.Player.GraphicsApi = SystemInfo.graphicsDeviceType.ToString();
+            run.Player.RenderThreadingMode = SystemInfo.renderingThreadingMode.ToString();
+            run.Player.MtRendering = SystemInfo.graphicsMultiThreaded;
+            run.Player.GraphicsJobs = SystemInfo.renderingThreadingMode.ToString().IndexOf("Job", StringComparison.InvariantCultureIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// Loads run from resources.
+        /// </summary>
+        /// <returns>Performance run data loaded from resources.</returns>
+        public static Run GetFromResources()
+        {
+            var run = ResourcesLoader.Load<Run>(Utils.TestRunInfo, Utils.PlayerPrefKeyRunJSON);
+            SetRuntimeSettings(run);
+
+            return run;
+        }
+
+        /// <summary>
+        /// Sets runtime player settings on a run.
+        /// </summary>
+        /// <param name="run">Run used to set settings.</param>
+        public static void SetRuntimeSettings(Run run)
+        {
+            run.Hardware = GetHardware();
+            SetPlayerSettings(run);
+            run.TestSuite = Application.isPlaying ? "Playmode" : "Editmode";
+#if USE_CUSTOM_METADATA
+            SetCustomMetadata(run);
+#endif
+        }
+
+#if USE_CUSTOM_METADATA
+        private static void SetCustomMetadata(Run run)
+        {
+            var customMetadataManager = new CustomMetadataManager(run.Dependencies);
+            // This field is historically not used so we can safely store additional string delimited
+            // metadata here, then parse the metadata values out on the SQL side to give us access
+            // to additional metadata that would normally require a schema change, or a property back field
+            run.Player.AndroidTargetSdkVersion = customMetadataManager.GetCustomMetadata();
+        }
+#endif
+    }
+}
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/SampleGroup.cs
+====================================
+using System;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Unity.PerformanceTesting.Exceptions;
+using UnityEngine.Profiling;
+
+namespace Unity.PerformanceTesting
+{
+    /// <summary>
+    /// Represents a performance test sample group.
+    /// </summary>
+    [Serializable]
+    public class SampleGroup : IDeserializationCallback
+    {
+        /// <summary>
+        /// Name of the sample group.
+        /// </summary>
+        public string Name;
+        /// <summary>
+        /// Measurement unit.
+        /// </summary>
+        public SampleUnit Unit;
+        /// <summary>
+        /// Whether the measurement is inverted and increase is positive.
+        /// </summary>
+        public bool IncreaseIsBetter;
+        /// <summary>
+        /// List of samples.
+        /// </summary>
+        public List<double> Samples = new List<double>();
+        /// <summary>
+        /// Minimum value of samples.
+        /// </summary>
+        public double Min;
+        /// <summary>
+        /// Maximum value of samples.
+        /// </summary>
+        public double Max;
+        /// <summary>
+        /// Medina value of samples.
+        /// </summary>
+        public double Median;
+        /// <summary>
+        /// Average value of samples.
+        /// </summary>
+        public double Average;
+        /// <summary>
+        /// Standard deviation of samples.
+        /// </summary>
+        public double StandardDeviation;
+        /// <summary>
+        /// Sum of samples.
+        /// </summary>
+        public double Sum;
+
+        /// <summary>
+        /// Creates a new sample group with given parameters.
+        /// </summary>
+        /// <param name="name">Name of the sample group.</param>
+        /// <param name="unit">Unit of measurement.</param>
+        /// <param name="increaseIsBetter">Whether the measurement is inverted and increase is positive.</param>
+        /// <exception cref="PerformanceTestException">Exception can be thrown if empty or null name is provided.</exception>
+        public SampleGroup(string name, SampleUnit unit = SampleUnit.Millisecond, bool increaseIsBetter = false)
+        {
+            Name = name;
+            Unit = unit;
+            IncreaseIsBetter = increaseIsBetter;
+
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new PerformanceTestException("Sample group name is empty. Please assign a valid name.");
+            }
+        }
+
+        internal Recorder Recorder;
+
+        /// <summary>
+        /// Gets the profiler recorder object.
+        /// </summary>
+        /// <returns>Profiler recorder.</returns>
+        public Recorder GetRecorder()
+        {
+            return Recorder ?? (Recorder = Recorder.Get(Name));
+        }
+
+        /// <summary>
+        /// Validates the deserialized object.
+        /// </summary>
+        /// <param name="sender">The object that initiated the deserialization process.</param>
+        public void OnDeserialization(object sender)
+        {
+            if (string.IsNullOrEmpty(Name))
+            {
+                throw new PerformanceTestException("Sample group name is empty. Please assign a valid name.");
+            }
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Attributes/PerformanceAttribute.cs
+====================================
+using System;
+using System.Collections;
+using NUnit.Framework;
+using NUnit.Framework.Interfaces;
+using Unity.PerformanceTesting.Data;
+using Unity.PerformanceTesting.Runtime;
+using UnityEngine.TestTools;
+
+namespace Unity.PerformanceTesting
+{
+    /// <summary>
+    /// Test attribute to specify a performance test. It will add category "Performance" to test properties.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public class PerformanceAttribute : CategoryAttribute, IOuterUnityTestAction
+    {
+        /// <summary>
+        /// Adds performance attribute to a test method.
+        /// </summary>
+        public PerformanceAttribute()
+            : base("Performance") { }
+
+        /// <summary>
+        /// Executed before a test execution.
+        /// </summary>
+        /// <param name="test">Test to execute.</param>
+        /// <returns>Enumerable collection of actions to perform before test setup.</returns>
+        public IEnumerator BeforeTest(ITest test)
+        {
+            if (RunSettings.Instance == null)
+            {
+                RunSettings.Instance = ResourcesLoader.Load<RunSettings>(Utils.RunSettings, Utils.PlayerPrefKeySettingsJSON);
+            }
+
+            // domain reload will cause this method to be hit multiple times
+            // active performance test is serialized and survives reloads
+            if (PerformanceTest.Active == null)
+            {
+                PerformanceTest.StartTest(test);
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Executed after a test execution.
+        /// </summary>
+        /// <param name="test">Executed test.</param>
+        /// <returns>Enumerable collection of actions to perform after test teardown.</returns>
+        public IEnumerator AfterTest(ITest test)
+        {
+            PerformanceTest.EndTest(test);
+            yield return null;
+        }
+    }
+}
+
+
+====================================
+./Library/PackageCache/com.unity.test-framework.performance@0840f58e4562/Runtime/Attributes/VersionAttribute.cs
+====================================

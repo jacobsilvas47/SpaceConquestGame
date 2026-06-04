@@ -15,6 +15,9 @@ public class BuildingQueueRowUI : MonoBehaviour
 
     public void Bind(BuildingUpgradeJob job, GameState state, int index, System.Action<int> cancelCallback)
     {
+        Debug.Log("BuildingQueueRowUI Bind called");
+        Debug.Log($"Cancel button assigned: {cancelButton != null}");
+
         queueIndex = index;
         onCancelClicked = cancelCallback;
 
@@ -49,7 +52,12 @@ public class BuildingQueueRowUI : MonoBehaviour
         if (cancelButton)
         {
             cancelButton.onClick.RemoveAllListeners();
-            cancelButton.onClick.AddListener(() => onCancelClicked?.Invoke(queueIndex));
+
+            cancelButton.onClick.AddListener(() =>
+            {
+                Debug.Log("X button clicked");
+                onCancelClicked?.Invoke(queueIndex);
+            });
         }
     }
 

@@ -157,6 +157,7 @@
     <Compile Include="Assets/Scripts/AITargetUI/AITargetsPanelUI.cs" />
     <Compile Include="Assets/Scripts/Missions/MissionType.cs" />
     <Compile Include="Assets/Scripts/UI/ExpeditionPanelUI.cs" />
+    <Compile Include="Assets/Scripts/Fleet/ShipBuildCardUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/DropdownSample.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/VertexColorCycler.cs" />
     <Compile Include="Assets/Scripts/Missions/Mission.cs" />

@@ -3,41 +3,93 @@ using UnityEngine;
 
 public class FleetBuildPanelUI : MonoBehaviour
 {
-    [Header("Ship Rows")]
-    [SerializeField] private List<ShipBuildRowUI> rows = new List<ShipBuildRowUI>();
-
-    private ShipCategory currentCategory = ShipCategory.All;
-
     [Header("Refs")]
     [SerializeField] private ResourceManager resourceManager;
+    [SerializeField] private GameStateHolder gameStateHolder;
+    [SerializeField] private string planetId = "home";
+
+    [Header("Prefab Setup")]
+    [SerializeField] private Transform contentParent;
+    [SerializeField] private ShipBuildCardUI shipBuildCardPrefab;
+
+    [Header("Ship Icons")]
+    [SerializeField] private Sprite probeIcon;
+
+    private ShipCategory currentCategory = ShipCategory.All;
+    private readonly List<ShipBuildCardUI> spawnedCards = new();
+
+    private void Start()
+    {
+        Rebuild();
+    }
+
+    private void OnEnable()
+    {
+        Rebuild();
+    }
+
+    private void Update()
+    {
+        foreach (ShipBuildCardUI card in spawnedCards)
+        {
+            if (card != null)
+                card.Refresh();
+        }
+    }
+
+    public void Rebuild()
+    {
+        ClearCards();
+
+        CreateCard(ShipType.Probe, ShipCategory.ScoutsAndUtility, probeIcon);
+
+        CreateCard(ShipType.SmallCargo, ShipCategory.CargoAndLogistics, null);
+        CreateCard(ShipType.LargeCargo, ShipCategory.CargoAndLogistics, null);
+
+        CreateCard(ShipType.BasicFighter, ShipCategory.LightCombat, null);
+        CreateCard(ShipType.Interceptor, ShipCategory.LightCombat, null);
+
+        CreateCard(ShipType.ColonyShip, ShipCategory.Colonization, null);
+
+        ApplyCategoryFilter(currentCategory);
+    }
+
+    private void CreateCard(ShipType shipType, ShipCategory category, Sprite icon)
+    {
+        if (contentParent == null || shipBuildCardPrefab == null)
+            return;
+
+        ShipBuildCardUI card = Instantiate(shipBuildCardPrefab, contentParent);
+
+        card.Setup(
+            shipType,
+            category,
+            icon,
+            resourceManager,
+            gameStateHolder,
+            planetId
+        );
+
+        spawnedCards.Add(card);
+    }
+
+    private void ClearCards()
+    {
+        foreach (ShipBuildCardUI card in spawnedCards)
+        {
+            if (card != null)
+                Destroy(card.gameObject);
+        }
+
+        spawnedCards.Clear();
+    }
 
     public void OnClickBuildAll()
     {
-        if (resourceManager == null)
+        foreach (ShipBuildCardUI card in spawnedCards)
         {
-            Debug.LogError("[FleetBuildPanelUI] ResourceManager is missing.");
-            return;
-        }
-
-        foreach (var row in rows)
-        {
-            if (row == null) continue;
-
-            int amount = row.GetRequestedAmount();
-            if (amount <= 0) continue;
-
-            bool success = resourceManager.TryQueueShipBuild(row.shipType, amount);
-
-            if (success)
-            {
-                row.ClearInput();
-            }
-        }
-
-        foreach (var row in rows)
-        {
-            if (row != null)
-                row.Refresh();
+            if (card != null)
+                card.TryBuildFromInput();
         }
     }
 
@@ -85,15 +137,15 @@ public class FleetBuildPanelUI : MonoBehaviour
     {
         currentCategory = category;
 
-        foreach (var row in rows)
+        foreach (ShipBuildCardUI card in spawnedCards)
         {
-            if (row == null) continue;
+            if (card == null) continue;
 
             bool shouldShow =
                 category == ShipCategory.All ||
-                row.GetCategory() == category;
+                card.GetCategory() == category;
 
-            row.gameObject.SetActive(shouldShow);
+            card.gameObject.SetActive(shouldShow);
         }
     }
 }

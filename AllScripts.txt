@@ -5962,20 +5962,19 @@ public class ResourceManager : MonoBehaviour
             UpdateUI();
             return false;
         }
+            PlanetState planet = GetPlanet();
 
-        for (int i = 0; i < amount; i++)
-        {
-            if (!ShipyardQueueSystem.TryEnqueueShip(gameStateHolder.state, planetId, shipType, out string error))
+            if (planet == null)
             {
-                Debug.LogWarning($"[ResourceManager] Failed to queue {shipType}: {error}");
-                UpdateUI();
+                Debug.LogWarning("[ResourceManager] Planet missing.");
                 return false;
             }
-        }
 
-        Debug.Log($"[ResourceManager] Queued {amount} {shipType}(s).");
-        UpdateUI();
-        return true;
+            QueueShipBuild(planet, shipType, amount);
+
+            Debug.Log($"[ResourceManager] Queued {amount} {shipType}(s).");
+            UpdateUI();
+            return true;
     }
 
     void RefreshCargoRows()
@@ -7774,6 +7773,125 @@ public class FleetPageUI : MonoBehaviour
     }
 }
 ==================================================
+Assets/Scripts/Fleet/ShipBuildCardUI.cs
+==================================================
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class ShipBuildCardUI : MonoBehaviour
+{
+    [Header("Ship")]
+    [SerializeField] private ShipType shipType;
+    [SerializeField] private ShipCategory category;
+
+    [Header("UI References")]
+    [SerializeField] private Image shipIcon;
+    [SerializeField] private TextMeshProUGUI nameText;
+    [SerializeField] private TextMeshProUGUI costText;
+    [SerializeField] private TextMeshProUGUI ownedText;
+    [SerializeField] private TMP_InputField quantityInput;
+    [SerializeField] private Button buildButton;
+    [SerializeField] private Button infoButton;
+
+    private ResourceManager resourceManager;
+    private GameStateHolder gameStateHolder;
+    private string planetId = "home";
+
+    public void Setup(
+        ShipType type,
+        ShipCategory shipCategory,
+        Sprite icon,
+        ResourceManager manager,
+        GameStateHolder holder,
+        string planet)
+    {
+        shipType = type;
+        category = shipCategory;
+        resourceManager = manager;
+        gameStateHolder = holder;
+        planetId = planet;
+
+        if (shipIcon != null)
+            shipIcon.sprite = icon;
+
+        if (quantityInput != null && string.IsNullOrWhiteSpace(quantityInput.text))
+            quantityInput.text = "1";
+
+        if (buildButton != null)
+        {
+            buildButton.onClick.RemoveAllListeners();
+            buildButton.onClick.AddListener(TryBuildFromInput);
+        }
+
+        Refresh();
+    }
+
+    public ShipCategory GetCategory()
+    {
+        return category;
+    }
+
+    public void Refresh()
+    {
+        ShipData data = ShipDatabase.Get(shipType);
+        if (data == null) return;
+
+        if (nameText != null)
+            nameText.text = data.displayName;
+
+        if (costText != null)
+        {
+            costText.text =
+                $"{NumberFormatter.Format(data.metalCost)} M / " +
+                $"{NumberFormatter.Format(data.crystalCost)} C / " +
+                $"{NumberFormatter.Format(data.gasCost)} G";
+        }
+
+        if (ownedText != null)
+        {
+            int owned = 0;
+
+            if (gameStateHolder != null && gameStateHolder.state != null)
+                owned = GameStateQueries.GetStationedShips(gameStateHolder.state, planetId, shipType);
+
+            ownedText.text = $"Owned: {NumberFormatter.Format(owned)}";
+        }
+    }
+
+    public void TryBuildFromInput()
+    {
+        if (resourceManager == null) return;
+
+        int amount = GetRequestedAmount();
+        if (amount <= 0) return;
+
+        bool success = resourceManager.TryQueueShipBuild(shipType, amount);
+
+        if (success)
+        {
+            ClearInput();
+            Refresh();
+        }
+    }
+
+    public int GetRequestedAmount()
+    {
+        if (quantityInput == null) return 1;
+
+        if (int.TryParse(quantityInput.text, out int amount))
+            return Mathf.Max(0, amount);
+
+        return 0;
+    }
+
+    public void ClearInput()
+    {
+        if (quantityInput != null)
+            quantityInput.text = "1";
+    }
+}
+==================================================
 Assets/Scripts/Fleet/ShipQueueRowUI.cs
 ==================================================
 using TMPro;
@@ -8202,41 +8320,93 @@ using UnityEngine;
 
 public class FleetBuildPanelUI : MonoBehaviour
 {
-    [Header("Ship Rows")]
-    [SerializeField] private List<ShipBuildRowUI> rows = new List<ShipBuildRowUI>();
-
-    private ShipCategory currentCategory = ShipCategory.All;
-
     [Header("Refs")]
     [SerializeField] private ResourceManager resourceManager;
+    [SerializeField] private GameStateHolder gameStateHolder;
+    [SerializeField] private string planetId = "home";
+
+    [Header("Prefab Setup")]
+    [SerializeField] private Transform contentParent;
+    [SerializeField] private ShipBuildCardUI shipBuildCardPrefab;
+
+    [Header("Ship Icons")]
+    [SerializeField] private Sprite probeIcon;
+
+    private ShipCategory currentCategory = ShipCategory.All;
+    private readonly List<ShipBuildCardUI> spawnedCards = new();
+
+    private void Start()
+    {
+        Rebuild();
+    }
+
+    private void OnEnable()
+    {
+        Rebuild();
+    }
+
+    private void Update()
+    {
+        foreach (ShipBuildCardUI card in spawnedCards)
+        {
+            if (card != null)
+                card.Refresh();
+        }
+    }
+
+    public void Rebuild()
+    {
+        ClearCards();
+
+        CreateCard(ShipType.Probe, ShipCategory.ScoutsAndUtility, probeIcon);
+
+        CreateCard(ShipType.SmallCargo, ShipCategory.CargoAndLogistics, null);
+        CreateCard(ShipType.LargeCargo, ShipCategory.CargoAndLogistics, null);
+
+        CreateCard(ShipType.BasicFighter, ShipCategory.LightCombat, null);
+        CreateCard(ShipType.Interceptor, ShipCategory.LightCombat, null);
+
+        CreateCard(ShipType.ColonyShip, ShipCategory.Colonization, null);
+
+        ApplyCategoryFilter(currentCategory);
+    }
+
+    private void CreateCard(ShipType shipType, ShipCategory category, Sprite icon)
+    {
+        if (contentParent == null || shipBuildCardPrefab == null)
+            return;
+
+        ShipBuildCardUI card = Instantiate(shipBuildCardPrefab, contentParent);
+
+        card.Setup(
+            shipType,
+            category,
+            icon,
+            resourceManager,
+            gameStateHolder,
+            planetId
+        );
+
+        spawnedCards.Add(card);
+    }
+
+    private void ClearCards()
+    {
+        foreach (ShipBuildCardUI card in spawnedCards)
+        {
+            if (card != null)
+                Destroy(card.gameObject);
+        }
+
+        spawnedCards.Clear();
+    }
 
     public void OnClickBuildAll()
     {
-        if (resourceManager == null)
+        foreach (ShipBuildCardUI card in spawnedCards)
         {
-            Debug.LogError("[FleetBuildPanelUI] ResourceManager is missing.");
-            return;
-        }
-
-        foreach (var row in rows)
-        {
-            if (row == null) continue;
-
-            int amount = row.GetRequestedAmount();
-            if (amount <= 0) continue;
-
-            bool success = resourceManager.TryQueueShipBuild(row.shipType, amount);
-
-            if (success)
-            {
-                row.ClearInput();
-            }
-        }
-
-        foreach (var row in rows)
-        {
-            if (row != null)
-                row.Refresh();
+            if (card != null)
+                card.TryBuildFromInput();
         }
     }
 
@@ -8284,15 +8454,15 @@ public class FleetBuildPanelUI : MonoBehaviour
     {
         currentCategory = category;
 
-        foreach (var row in rows)
+        foreach (ShipBuildCardUI card in spawnedCards)
         {
-            if (row == null) continue;
+            if (card == null) continue;
 
             bool shouldShow =
                 category == ShipCategory.All ||
-                row.GetCategory() == category;
+                card.GetCategory() == category;
 
-            row.gameObject.SetActive(shouldShow);
+            card.gameObject.SetActive(shouldShow);
         }
     }
 }

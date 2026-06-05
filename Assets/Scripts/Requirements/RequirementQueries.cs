@@ -46,6 +46,16 @@ public static class RequirementQueries
             default:
                 Debug.LogWarning($"[RequirementQueries] Unhandled requirement type: {type}");
                 return 0;
+
+            // Defense
+            case RequirementType.Engineering:
+            return state.research.GetLevel(ResearchType.Engineering);
+
+            case RequirementType.WeaponSystems:
+                return state.research.GetLevel(ResearchType.WeaponSystems);
+
+            case RequirementType.DefenseSystems:
+                return state.research.GetLevel(ResearchType.DefenseSystems);
         }
     }
 }

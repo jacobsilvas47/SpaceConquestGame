@@ -11,5 +11,8 @@ public enum RequirementType
     // Research
     LaserTech,
     ArmorTech,
-    EngineTech
+    EngineTech,
+    Engineering,
+    WeaponSystems,
+    DefenseSystems
 }

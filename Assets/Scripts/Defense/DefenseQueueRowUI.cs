@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class BuildingQueueRowUI : MonoBehaviour
+public class DefenseQueueRowUI : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI timeText;
@@ -13,12 +13,12 @@ public class BuildingQueueRowUI : MonoBehaviour
     private int queueIndex;
     private System.Action<int> onCancelClicked;
 
-    public void Bind(BuildingUpgradeJob job, GameState state, int index, System.Action<int> cancelCallback)
+    public void Bind(DefenseBuildJob job, GameState state, int index, double totalRemainingUntilThisJob, System.Action<int> cancelCallback)
     {
         queueIndex = index;
         onCancelClicked = cancelCallback;
 
-        UpdateDisplay(job, state);
+        UpdateDisplay(job, state, totalRemainingUntilThisJob);
 
         if (cancelButton)
         {
@@ -27,27 +27,21 @@ public class BuildingQueueRowUI : MonoBehaviour
         }
     }
 
-    public void UpdateDisplay(BuildingUpgradeJob job, GameState state)
+    public void UpdateDisplay(DefenseBuildJob job, GameState state, double totalRemainingUntilThisJob)
     {
         if (job == null || state == null) return;
 
-        string buildingName = GetBuildingDisplayName(job.buildingType);
-
         if (nameText)
-            nameText.text = $"{buildingName}  -  Lv {job.targetLevel}";
-
-        double remaining = job.started
-            ? System.Math.Max(0, job.completeTimeUtc - state.gameTime)
-            : job.durationSeconds;
+            nameText.text = $"{GetDefenseDisplayName(job.defenseType)} x{job.amount}";
 
         if (timeText)
-            timeText.text = $"Time: {TimeFormatUtility.FormatDuration(remaining)}";
+            timeText.text = $"Time: {TimeFormatUtility.FormatDuration(totalRemainingUntilThisJob)}";
 
         float progress = 0f;
 
         if (job.started && job.durationSeconds > 0)
         {
-            double elapsed = state.gameTime - job.startTimeUtc;
+            double elapsed = state.gameTime - job.startTime;
             progress = Mathf.Clamp01((float)(elapsed / job.durationSeconds));
         }
 
@@ -58,15 +52,9 @@ public class BuildingQueueRowUI : MonoBehaviour
             percentText.text = $"{Mathf.RoundToInt(progress * 100f)}%";
     }
 
-    private string GetBuildingDisplayName(BuildingType type)
+    private string GetDefenseDisplayName(DefenseType type)
     {
-        switch (type)
-        {
-            case BuildingType.MetalRefinery: return "Metal Refinery";
-            case BuildingType.CrystalMine: return "Crystal Mine";
-            case BuildingType.GasExtractor: return "Gas Extractor";
-            case BuildingType.OrbitalShipworks: return "Orbital Shipworks";
-            default: return type.ToString();
-        }
+        DefenseData data = DefenseDatabase.Get(type);
+        return data != null ? data.displayName : type.ToString();
     }
 }

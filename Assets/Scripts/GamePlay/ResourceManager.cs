@@ -182,6 +182,7 @@ public class ResourceManager : MonoBehaviour
         if (p != null)
         {
             BuildingUpgradeSystem.UpdateBuildingUpgrades(gameStateHolder.state, planetId);
+            DefenseQueueSystem.UpdateDefenseQueue(gameStateHolder.state, planetId);
             TickShipQueue(p);
 
             p.metal += metalPerSec * Time.deltaTime;
@@ -472,7 +473,6 @@ public class ResourceManager : MonoBehaviour
 
         RefreshBasicFighterRow();
         RefreshCargoRows();
-        //RefreshBuildingQueueUI();
     }
 
     // Build Methods
@@ -509,8 +509,6 @@ public class ResourceManager : MonoBehaviour
                 actionStatusText.color = Color.green;
                 actionStatusText.text = $"{displayName} upgrade queued";
             }
-
-            RefreshBuildingQueueUI();
         }
         else
         {
@@ -528,28 +526,32 @@ public class ResourceManager : MonoBehaviour
     // Defense Build Methods
     public bool TryBuildDefense(DefenseType defenseType, int amount)
     {
-        if (amount <= 0) return false;
+        bool success = DefenseQueueSystem.TryQueueDefense(
+            gameStateHolder.state,
+            planetId,
+            defenseType,
+            amount,
+            out string error
+        );
 
-        var p = GetPlanet();
-        if (p == null) return false;
+        if (actionStatusText)
+        {
+            actionStatusText.gameObject.SetActive(true);
 
-        var defense = DefenseDatabase.Get(defenseType);
-        if (defense == null) return false;
+            if (success)
+            {
+                actionStatusText.color = Color.green;
+                actionStatusText.text = $"{amount} {defenseType} queued";
+            }
+            else
+            {
+                actionStatusText.color = Color.red;
+                actionStatusText.text = error;
+            }
+        }
 
-        int totalMetal = defense.metalCost * amount;
-        int totalCrystal = defense.crystalCost * amount;
-        int totalGas = defense.gasCost * amount;
-
-        if (p.metal < totalMetal || p.crystal < totalCrystal || p.gas < totalGas)
-            return false;
-
-        p.metal -= totalMetal;
-        p.crystal -= totalCrystal;
-        p.gas -= totalGas;
-
-        p.AddDefense(defenseType, amount);
-
-        return true;
+        UpdateUI();
+        return success;
     }
 
     private void ResetInput(TMP_InputField inputField)
@@ -1131,51 +1133,6 @@ public class ResourceManager : MonoBehaviour
 
         if (smallCargoOwnedText) smallCargoOwnedText.text = $"Owned: {sc}";
         if (largeCargoOwnedText) largeCargoOwnedText.text = $"Owned: {lc}";
-    }
-
-    private void RefreshBuildingQueueUI()
-    {
-        if (buildingQueueContainer == null || buildingQueueRowPrefab == null)
-            return;
-
-        foreach (Transform child in buildingQueueContainer)
-            Destroy(child.gameObject);
-
-        var p = GetPlanet();
-        var state = gameStateHolder != null ? gameStateHolder.state : null;
-
-        if (p == null || state == null || p.buildingUpgradeQueue == null)
-            return;
-
-        for (int i = 0; i < p.buildingUpgradeQueue.Count; i++)
-        {
-            BuildingUpgradeJob job = p.buildingUpgradeQueue[i];
-
-            GameObject rowObj = Instantiate(buildingQueueRowPrefab, buildingQueueContainer);
-
-            BuildingQueueRowUI rowUI = rowObj.GetComponent<BuildingQueueRowUI>();
-
-            if (rowUI != null)
-                rowUI.Bind(job, state, i, CancelBuildingUpgrade);
-        }
-    }
-
-    private void CancelBuildingUpgrade(int index)
-    {
-        var p = GetPlanet();
-
-        if (p == null || p.buildingUpgradeQueue == null)
-            return;
-
-        if (index < 0 || index >= p.buildingUpgradeQueue.Count)
-            return;
-
-        Debug.Log($"Canceling building queue item at index {index}");
-
-        p.buildingUpgradeQueue.RemoveAt(index);
-
-        RefreshBuildingQueueUI();
-        UpdateUI();
     }
 
     public void OpenBuild()

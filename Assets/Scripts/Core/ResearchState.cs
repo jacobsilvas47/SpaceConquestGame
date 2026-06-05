@@ -6,6 +6,8 @@ public class ResearchState
 {
     public Dictionary<ResearchType, int> levels = new Dictionary<ResearchType, int>();
 
+    public List<ResearchJob> researchQueue = new List<ResearchJob>();
+
     public int GetLevel(ResearchType type)
     {
         return levels.TryGetValue(type, out int lvl) ? lvl : 0;

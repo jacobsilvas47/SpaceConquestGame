@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 public class DefenseData
 {
     public DefenseType defenseType;
@@ -11,6 +13,8 @@ public class DefenseData
     public int hp;
     public int shield;
 
+    public List<Requirement> requirements = new List<Requirement>();
+
     public DefenseData(
         DefenseType defenseType,
         string displayName,
@@ -19,7 +23,8 @@ public class DefenseData
         int gasCost,
         int attack,
         int hp,
-        int shield = 0)
+        int shield = 0,
+        List<Requirement> requirements = null)
     {
         this.defenseType = defenseType;
         this.displayName = displayName;
@@ -29,5 +34,8 @@ public class DefenseData
         this.attack = attack;
         this.hp = hp;
         this.shield = shield;
+
+        if (requirements != null)
+            this.requirements = requirements;
     }
 }

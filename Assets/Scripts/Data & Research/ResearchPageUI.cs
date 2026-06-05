@@ -121,7 +121,7 @@ public class ResearchPageUI : MonoBehaviour
         GameState state = gameStateHolder != null ? gameStateHolder.state : null;
         if (state == null) return;
 
-        if (ResearchSystem.TryResearch(state, type, planetId, out string error))
+        if (ResearchSystem.TryQueueResearch(state, type, planetId, out string error))
         {
             Refresh();
         }

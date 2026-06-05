@@ -553,13 +553,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5379768337670900013}
-  - component: {fileID: 7574678833227860083}
   - component: {fileID: 6051523910455410291}
   - component: {fileID: 933161519980440422}
   - component: {fileID: 690589182652814266}
   - component: {fileID: 6702629924383319297}
+  - component: {fileID: 2523048054843194231}
   m_Layer: 5
-  m_Name: QueueRow
+  m_Name: DefenseQueueRow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -589,23 +589,6 @@ RectTransform:
   m_AnchoredPosition: {x: 10, y: -10}
   m_SizeDelta: {x: 600, y: 55}
   m_Pivot: {x: 0, y: 1}
---- !u!114 &7574678833227860083
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6756546730541580741}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ba8d8c1c6d3214de5aaa7bf7f8cc3413, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BuildingQueueRowUI
-  nameText: {fileID: 8369804100835596164}
-  timeText: {fileID: 6240939309557093785}
-  percentText: {fileID: 6241058120523312367}
-  progressFill: {fileID: 5984415201913461525}
-  cancelButton: {fileID: 2033808079874511390}
 --- !u!114 &6051523910455410291
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -679,6 +662,23 @@ MonoBehaviour:
   m_EffectColor: {r: 0.5660378, g: 0.5660378, b: 0.5660378, a: 0.3137255}
   m_EffectDistance: {x: 0, y: -1}
   m_UseGraphicAlpha: 1
+--- !u!114 &2523048054843194231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6756546730541580741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 399a0da73b89c42b79a92556e7861556, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DefenseQueueRowUI
+  nameText: {fileID: 8369804100835596164}
+  timeText: {fileID: 6240939309557093785}
+  percentText: {fileID: 6241058120523312367}
+  progressFill: {fileID: 5984415201913461525}
+  cancelButton: {fileID: 2033808079874511390}
 --- !u!1 &6883116710947239380
 GameObject:
   m_ObjectHideFlags: 0

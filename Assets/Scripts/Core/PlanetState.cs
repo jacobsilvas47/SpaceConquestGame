@@ -63,6 +63,9 @@ using System.Collections.Generic;
     public BuildingUpgradeJob activeBuildingUpgrade;
     public List<BuildingUpgradeJob> buildingUpgradeQueue = new List<BuildingUpgradeJob>();
 
+    // Defenses
+    public List<DefenseBuildJob> defenseBuildQueue = new List<DefenseBuildJob>();
+
     public PlanetState(string planetId)
     {
         this.planetId = planetId;

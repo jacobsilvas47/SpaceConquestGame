@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class BuildingQueueRowUI : MonoBehaviour
+public class ResearchQueueRowUI : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI timeText;
@@ -13,7 +13,7 @@ public class BuildingQueueRowUI : MonoBehaviour
     private int queueIndex;
     private System.Action<int> onCancelClicked;
 
-    public void Bind(BuildingUpgradeJob job, GameState state, int index, System.Action<int> cancelCallback)
+    public void Bind(ResearchJob job, GameState state, int index, System.Action<int> cancelCallback)
     {
         queueIndex = index;
         onCancelClicked = cancelCallback;
@@ -27,17 +27,15 @@ public class BuildingQueueRowUI : MonoBehaviour
         }
     }
 
-    public void UpdateDisplay(BuildingUpgradeJob job, GameState state)
+    public void UpdateDisplay(ResearchJob job, GameState state)
     {
         if (job == null || state == null) return;
 
-        string buildingName = GetBuildingDisplayName(job.buildingType);
-
         if (nameText)
-            nameText.text = $"{buildingName}  -  Lv {job.targetLevel}";
+            nameText.text = $"{GetResearchDisplayName(job.researchType)}  -  Lv {job.targetLevel}";
 
         double remaining = job.started
-            ? System.Math.Max(0, job.completeTimeUtc - state.gameTime)
+            ? System.Math.Max(0, job.completeTime - state.gameTime)
             : job.durationSeconds;
 
         if (timeText)
@@ -47,7 +45,7 @@ public class BuildingQueueRowUI : MonoBehaviour
 
         if (job.started && job.durationSeconds > 0)
         {
-            double elapsed = state.gameTime - job.startTimeUtc;
+            double elapsed = state.gameTime - job.startTime;
             progress = Mathf.Clamp01((float)(elapsed / job.durationSeconds));
         }
 
@@ -58,14 +56,14 @@ public class BuildingQueueRowUI : MonoBehaviour
             percentText.text = $"{Mathf.RoundToInt(progress * 100f)}%";
     }
 
-    private string GetBuildingDisplayName(BuildingType type)
+    private string GetResearchDisplayName(ResearchType type)
     {
         switch (type)
         {
-            case BuildingType.MetalRefinery: return "Metal Refinery";
-            case BuildingType.CrystalMine: return "Crystal Mine";
-            case BuildingType.GasExtractor: return "Gas Extractor";
-            case BuildingType.OrbitalShipworks: return "Orbital Shipworks";
+            case ResearchType.Engineering: return "Engineering";
+            case ResearchType.WeaponSystems: return "Weapon Systems";
+            case ResearchType.DefenseSystems: return "Defense Systems";
+            case ResearchType.EngineTech: return "Engine Tech";
             default: return type.ToString();
         }
     }

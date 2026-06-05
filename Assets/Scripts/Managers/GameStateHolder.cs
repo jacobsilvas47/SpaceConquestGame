@@ -24,6 +24,8 @@ public class GameStateHolder : MonoBehaviour
 {
     state.gameTime += Time.deltaTime;
 
+    ResearchSystem.UpdateResearch(state);
+
     // mission engine tick
     MissionEngine.UpdateMissions(state);
 

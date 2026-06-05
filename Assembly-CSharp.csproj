@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets/Scripts/Missions/MissionUIUtility.cs" />
+    <Compile Include="Assets/Scripts/Buildings/BuildingQueuePanelUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextEventHandler.cs" />
     <Compile Include="Assets/Scripts/Requirements/RequirementTest.cs" />
     <Compile Include="Assets/Scripts/Combat/BattleReportFormatter.cs" />
@@ -59,11 +60,13 @@
     <Compile Include="Assets/Scripts/Inventory/Data/ItemDatabase.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextSelector_A.cs" />
     <Compile Include="Assets/Scripts/Defense/DefenseDatabase.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseQueueRowUI.cs" />
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryState.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetPageUI.cs" />
     <Compile Include="Assets/Scripts/UI/UIPageController.cs" />
     <Compile Include="Assets/Scripts/UI/MainPageActivityPanelUI.cs" />
     <Compile Include="Assets/Scripts/Requirements/RequirementUtility.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseQueuePanelUI.cs" />
     <Compile Include="Assets/Scripts/Missions/AITargetSeeder.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark02.cs" />
     <Compile Include="Assets/Scripts/Console/MissionConsolePanelUI.cs" />
@@ -80,6 +83,7 @@
     <Compile Include="Assets/Scripts/Fleet/ShipTier.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_ExampleScript_01.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMPro_InstructionOverlay.cs" />
+    <Compile Include="Assets/Scripts/Data &amp; Research/ResearchJob.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/VertexShakeB.cs" />
     <Compile Include="Assets/Scripts/Data &amp; Research/ResearchType.cs" />
     <Compile Include="Assets/Scripts/Missions/AttackTarget.cs" />
@@ -98,6 +102,7 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextSelector_B.cs" />
     <Compile Include="Assets/Scripts/Defense/PlanetDefenseCalculator.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/SkewTextExample.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseBuildJob.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/WarpTextExample.cs" />
     <Compile Include="Assets/Scripts/UI/ExpeditionSlotListUI.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetFactory.cs" />
@@ -126,6 +131,7 @@
     <Compile Include="Assets/Scripts/Debug/FleetCombatTest.cs" />
     <Compile Include="Assets/Scripts/Inventory/UI/InventoryRowUI.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/ChatController.cs" />
+    <Compile Include="Assets/Scripts/Data &amp; Research/ResearchQueueRowUI.cs" />
     <Compile Include="Assets/Scripts/Fleet/Fleet.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionResolver.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_DigitValidator.cs" />
@@ -158,11 +164,13 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_PhoneNumberValidator.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionMission.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipyardQueueSystem.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseQueueSystem.cs" />
     <Compile Include="Assets/Scripts/Requirements/Requirement.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TextConsoleSimulator.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TeleType.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextEventCheck.cs" />
     <Compile Include="Assets/Scripts/Core/ResearchState.cs" />
+    <Compile Include="Assets/Scripts/Data &amp; Research/ResearchQueuePanelUI.cs" />
     <Compile Include="Assets/Scripts/Fleet/ShipRole.cs" />
     <Compile Include="Assets/Scripts/Core/PlanetState.cs" />
     <Compile Include="Assets/Scripts/Expeditions/ExpeditionRules.cs" />
@@ -210,7 +218,6 @@
     <None Include="Assets/TextMesh Pro/Shaders/TMP_Bitmap-Mobile.shader" />
     <None Include="Assets/TextMesh Pro/Fonts/LiberationSans - OFL.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_SDF-Mobile.shader" />
-    <None Include="Assets/Scripts/AllScripts.txt" />
     <None Include="Assets/TextMesh Pro/Shaders/TMP_Sprite.shader" />
     <None Include="Assets/TextMesh Pro/Examples &amp; Extras/Fonts/Bangers - OFL.txt" />
   </ItemGroup>

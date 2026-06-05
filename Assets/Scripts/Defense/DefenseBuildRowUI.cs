@@ -14,6 +14,7 @@ public class DefenseBuildRowUI : MonoBehaviour
     public TextMeshProUGUI canBuildText;
     public TMP_InputField amountInput;
     public Button buildButton;
+    public Button infoButton;
 
     [Header("Refs")]
     public GameStateHolder gameStateHolder;
@@ -26,6 +27,9 @@ public class DefenseBuildRowUI : MonoBehaviour
 
         if (buildButton != null)
             buildButton.onClick.AddListener(OnBuildClicked);
+
+        if (infoButton != null)
+            infoButton.onClick.AddListener(OnInfoClicked);
     }
 
     public void Refresh()
@@ -53,12 +57,25 @@ public class DefenseBuildRowUI : MonoBehaviour
 
         if (ownedText)
             ownedText.text = $"Owned: {NumberFormatter.Format(owned)}";
-
             if (canBuildText && resourceManager != null)
         {
             int maxBuildable = resourceManager.GetMaxBuildableDefenses(defenseType);
             canBuildText.text = $"Can Build: {NumberFormatter.Format(maxBuildable)}";
         }
+
+        bool requirementsMet = true;
+
+        if (gameStateHolder != null && gameStateHolder.state != null)
+        {
+            requirementsMet = RequirementUtility.MeetsRequirements(
+                gameStateHolder.state,
+                planetId,
+                defense.requirements
+            );
+        }
+
+        if (buildButton != null)
+            buildButton.interactable = requirementsMet;
     }
 
     public int GetRequestedAmount()
@@ -84,5 +101,46 @@ public class DefenseBuildRowUI : MonoBehaviour
             amountInput.text = "";
 
         Refresh();
+    }
+
+    private void OnInfoClicked()
+    {
+        var defense = DefenseDatabase.Get(defenseType);
+        if (defense == null) return;
+
+        Debug.Log(BuildRequirementText(defense));
+    }
+
+    private string BuildRequirementText(DefenseData defense)
+    {
+        if (defense.requirements == null || defense.requirements.Count == 0)
+            return $"{defense.displayName} has no requirements.";
+
+        System.Collections.Generic.List<string> parts = new System.Collections.Generic.List<string>();
+
+        foreach (Requirement req in defense.requirements)
+        {
+            parts.Add($"{GetRequirementDisplayName(req.type)} Lv {req.level}");
+        }
+
+        return $"{defense.displayName} requires: " + string.Join(", ", parts);
+    }
+
+    private string GetRequirementDisplayName(RequirementType type)
+    {
+        switch (type)
+        {
+            case RequirementType.OrbitalShipworks: return "Orbital Shipworks";
+            case RequirementType.MetalRefinery: return "Metal Refinery";
+            case RequirementType.CrystalMine: return "Crystal Mine";
+            case RequirementType.GasExtractor: return "Gas Extractor";
+            case RequirementType.Engineering: return "Engineering";
+            case RequirementType.WeaponSystems: return "Weapon Systems";
+            case RequirementType.DefenseSystems: return "Defense Systems";
+            case RequirementType.EngineTech: return "Engine Tech";
+            case RequirementType.LaserTech: return "Laser Tech";
+            case RequirementType.ArmorTech: return "Armor Tech";
+            default: return type.ToString();
+        }
     }
 }

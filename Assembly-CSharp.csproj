@@ -117,6 +117,7 @@
     <Compile Include="Assets/Scripts/Inventory/Data/InventoryManager.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextInfoDebugTool.cs" />
     <Compile Include="Assets/Scripts/Missions/AITargetGenerator.cs" />
+    <Compile Include="Assets/Scripts/Defense/DefenseInfoPopupUI.cs" />
     <Compile Include="Assets/Scripts/Fleet/FleetBuildPanelUI.cs" />
     <Compile Include="Assets/Scripts/Combat/BattleResolver.cs" />
     <Compile Include="Assets/Scripts/UI/ExpeditionSlotRowUI.cs" />

@@ -6193,7 +6193,13 @@ public static class DefenseDatabase
                 DefenseType.LaserTurret,
                 "Laser Turret",
                 500, 150, 0,
-                40, 120
+                40, 120,
+                0,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.Engineering, level = 1 },
+                    new Requirement { type = RequirementType.WeaponSystems, level = 1 }
+                }
             )
         },
         {
@@ -6202,7 +6208,13 @@ public static class DefenseDatabase
                 DefenseType.MissileBattery,
                 "Missile Battery",
                 1200, 400, 0,
-                120, 180
+                120, 180,
+                0,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.Engineering, level = 2 },
+                    new Requirement { type = RequirementType.WeaponSystems, level = 2 }
+                }
             )
         },
         {
@@ -6211,7 +6223,13 @@ public static class DefenseDatabase
                 DefenseType.ShieldGenerator,
                 "Shield Generator",
                 2500, 1500, 0,
-                0, 250, 1000
+                0, 250,
+                1000,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.Engineering, level = 3 },
+                    new Requirement { type = RequirementType.DefenseSystems, level = 2 }
+                }
             )
         },
         {
@@ -6220,7 +6238,14 @@ public static class DefenseDatabase
                 DefenseType.PlanetaryCannon,
                 "Planetary Cannon",
                 8000, 5000, 1000,
-                450, 700
+                450, 700,
+                0,
+                new List<Requirement>
+                {
+                    new Requirement { type = RequirementType.Engineering, level = 5 },
+                    new Requirement { type = RequirementType.WeaponSystems, level = 5 },
+                    new Requirement { type = RequirementType.DefenseSystems, level = 4 }
+                }
             )
         }
     };
@@ -6286,6 +6311,12 @@ public static class DefenseQueueSystem
         if (data == null)
         {
             error = $"No defense data found for {defenseType}.";
+            return false;
+        }
+
+        if (!RequirementUtility.MeetsRequirements(state, planetId, data.requirements))
+        {
+            error = GetRequirementText(data);
             return false;
         }
 
@@ -6419,6 +6450,21 @@ public static class DefenseQueueSystem
         }
 
         return baseTime * Mathf.Max(1, amount);
+    }
+
+    private static string GetRequirementText(DefenseData defense)
+    {
+        if (defense == null || defense.requirements == null || defense.requirements.Count == 0)
+            return "Requirements not met.";
+
+        var parts = new System.Collections.Generic.List<string>();
+
+        foreach (Requirement req in defense.requirements)
+        {
+            parts.Add($"{req.type} Lv {req.level}");
+        }
+
+        return $"{defense.displayName} requires: " + string.Join(", ", parts);
     }
 }
 ==================================================
@@ -6851,7 +6897,13 @@ public class DefenseBuildRowUI : MonoBehaviour
         var defense = DefenseDatabase.Get(defenseType);
         if (defense == null) return;
 
-        Debug.Log(BuildRequirementText(defense));
+        string title = defense.displayName;
+        string body = BuildRequirementText(defense);
+
+        if (DefenseInfoPopupUI.Instance != null)
+            DefenseInfoPopupUI.Instance.Show(title, body);
+        else
+            Debug.Log(body);
     }
 
     private string BuildRequirementText(DefenseData defense)
@@ -7083,6 +7135,50 @@ public static class PlanetDefenseCalculator
         }
 
         return total;
+    }
+}
+==================================================
+Assets/Scripts/Defense/DefenseInfoPopupUI.cs
+==================================================
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class DefenseInfoPopupUI : MonoBehaviour
+{
+    public static DefenseInfoPopupUI Instance;
+
+    [SerializeField] private GameObject panel;
+    [SerializeField] private TextMeshProUGUI titleText;
+    [SerializeField] private TextMeshProUGUI bodyText;
+    [SerializeField] private Button closeButton;
+
+    private void Awake()
+    {
+        Instance = this;
+
+        if (closeButton != null)
+            closeButton.onClick.AddListener(Hide);
+
+        Hide();
+    }
+
+    public void Show(string title, string body)
+    {
+        if (panel != null)
+            panel.SetActive(true);
+
+        if (titleText != null)
+            titleText.text = title;
+
+        if (bodyText != null)
+            bodyText.text = body;
+    }
+
+    public void Hide()
+    {
+        if (panel != null)
+            panel.SetActive(false);
     }
 }
 ==================================================

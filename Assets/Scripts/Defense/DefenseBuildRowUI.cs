@@ -108,7 +108,13 @@ public class DefenseBuildRowUI : MonoBehaviour
         var defense = DefenseDatabase.Get(defenseType);
         if (defense == null) return;
 
-        Debug.Log(BuildRequirementText(defense));
+        string title = defense.displayName;
+        string body = BuildRequirementText(defense);
+
+        if (DefenseInfoPopupUI.Instance != null)
+            DefenseInfoPopupUI.Instance.Show(title, body);
+        else
+            Debug.Log(body);
     }
 
     private string BuildRequirementText(DefenseData defense)

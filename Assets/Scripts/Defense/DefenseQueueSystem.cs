@@ -39,6 +39,12 @@ public static class DefenseQueueSystem
             return false;
         }
 
+        if (!RequirementUtility.MeetsRequirements(state, planetId, data.requirements))
+        {
+            error = GetRequirementText(data);
+            return false;
+        }
+
         int totalMetal = data.metalCost * amount;
         int totalCrystal = data.crystalCost * amount;
         int totalGas = data.gasCost * amount;
@@ -169,5 +175,20 @@ public static class DefenseQueueSystem
         }
 
         return baseTime * Mathf.Max(1, amount);
+    }
+
+    private static string GetRequirementText(DefenseData defense)
+    {
+        if (defense == null || defense.requirements == null || defense.requirements.Count == 0)
+            return "Requirements not met.";
+
+        var parts = new System.Collections.Generic.List<string>();
+
+        foreach (Requirement req in defense.requirements)
+        {
+            parts.Add($"{req.type} Lv {req.level}");
+        }
+
+        return $"{defense.displayName} requires: " + string.Join(", ", parts);
     }
 }

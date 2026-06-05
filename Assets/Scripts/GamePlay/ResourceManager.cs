@@ -1107,20 +1107,19 @@ public class ResourceManager : MonoBehaviour
             UpdateUI();
             return false;
         }
+            PlanetState planet = GetPlanet();
 
-        for (int i = 0; i < amount; i++)
-        {
-            if (!ShipyardQueueSystem.TryEnqueueShip(gameStateHolder.state, planetId, shipType, out string error))
+            if (planet == null)
             {
-                Debug.LogWarning($"[ResourceManager] Failed to queue {shipType}: {error}");
-                UpdateUI();
+                Debug.LogWarning("[ResourceManager] Planet missing.");
                 return false;
             }
-        }
 
-        Debug.Log($"[ResourceManager] Queued {amount} {shipType}(s).");
-        UpdateUI();
-        return true;
+            QueueShipBuild(planet, shipType, amount);
+
+            Debug.Log($"[ResourceManager] Queued {amount} {shipType}(s).");
+            UpdateUI();
+            return true;
     }
 
     void RefreshCargoRows()
@@ -1248,23 +1247,19 @@ public class ResourceManager : MonoBehaviour
         double startTime = Time.time;
 
         if (p.shipQueue.Count > 0)
+            startTime = System.Math.Max(Time.time, p.shipQueue[p.shipQueue.Count - 1].finishTime);
+
+        double singleBuildTime = ShipBuildTimeSeconds * ResearchBonuses.GetBuildTimeMultiplier(gameStateHolder.state);
+        double totalBuildTime = singleBuildTime * amount;
+
+        p.shipQueue.Add(new ShipQueueItem
         {
-            double lastFinish = p.shipQueue[p.shipQueue.Count - 1].finishTime;
-            startTime = System.Math.Max(Time.time, lastFinish);
-        }
-
-        double buildTime = ShipBuildTimeSeconds * ResearchBonuses.GetBuildTimeMultiplier(gameStateHolder.state);
-
-        for (int i = 0; i < amount; i++)
-        {
-            p.shipQueue.Add(new ShipQueueItem
-            {
-                shipType = shipType,
-                finishTime = startTime + buildTime
-            });
-
-            startTime += buildTime;
-        }
+            shipType = shipType,
+            amount = amount,
+            startTime = startTime,
+            durationSeconds = totalBuildTime,
+            finishTime = startTime + totalBuildTime
+        });
     }
 
     private void TickShipQueue(PlanetState p)
@@ -1277,13 +1272,13 @@ public class ResourceManager : MonoBehaviour
             ShipQueueItem finished = p.shipQueue[0];
             p.shipQueue.RemoveAt(0);
 
-            p.AddStationed(finished.shipType, 1);
+            p.AddStationed(finished.shipType, finished.amount);
 
             if (actionStatusText)
             {
                 actionStatusText.gameObject.SetActive(true);
                 actionStatusText.color = Color.green;
-                actionStatusText.text = $"{GetShipDisplayName(finished.shipType)} built";
+                actionStatusText.text = $"{finished.amount} {GetShipDisplayName(finished.shipType)} built";
             }
         }
     }
@@ -1315,11 +1310,23 @@ public class ResourceManager : MonoBehaviour
         p.AddStationed(ShipType.LargeCargo, 100);
         p.AddStationed(ShipType.BasicFighter, 100);
 
+        // DEBUG: give 50 levels of each building
+        p.metalRefineryLevel = 50;
+        p.crystalMineLevel = 50;
+        p.gasExtractorLevel = 50;
+        p.orbitalShipworksLevel = 50;
+
+        // DEBUG: give 50 levels of each research
+        foreach (ResearchType type in System.Enum.GetValues(typeof(ResearchType)))
+        {
+            gameStateHolder.state.research.levels[type] = 50;
+        }
+
         if (actionStatusText)
         {
             actionStatusText.color = Color.yellow;
             actionStatusText.text =
-                $"Added {debugAddAmount} of each resource and +100 Probe/SC/LC/BF (DEBUG)";
+                $"Added {debugAddAmount} resources, ships, Lv 50 buildings, and Lv 50 research (DEBUG)";
         }
 
         UpdateUI();

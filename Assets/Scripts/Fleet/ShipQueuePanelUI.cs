@@ -17,12 +17,14 @@ public class ShipQueuePanelUI : MonoBehaviour
 
     private float nextRefreshTime;
     private readonly List<ShipQueueRowUI> spawnedRows = new();
+    private int lastQueueCount = -1;
 
-    private class QueueDisplayGroup
+    private void Start()
     {
-        public ShipType shipType;
-        public int count;
-        public double groupFinishTime;
+        if (gameStateHolder == null)
+            gameStateHolder = FindFirstObjectByType<GameStateHolder>();
+
+        Rebuild();
     }
 
     private void OnEnable()
@@ -34,77 +36,91 @@ public class ShipQueuePanelUI : MonoBehaviour
     {
         if (Time.unscaledTime < nextRefreshTime) return;
         nextRefreshTime = Time.unscaledTime + refreshInterval;
-        Rebuild();
+
+        PlanetState planet = GetPlanet();
+
+        int queueCount = planet != null && planet.shipQueue != null
+            ? planet.shipQueue.Count
+            : 0;
+
+        if (queueCount != lastQueueCount)
+        {
+            Rebuild();
+            return;
+        }
+
+        RefreshExistingRows();
     }
 
-    private void Rebuild()
+    private PlanetState GetPlanet()
+    {
+        if (gameStateHolder == null || gameStateHolder.state == null)
+            return null;
+
+        return gameStateHolder.state.GetPlanet(planetId);
+    }
+
+    public void Rebuild()
     {
         ClearRows();
 
-        if (gameStateHolder == null || gameStateHolder.state == null)
+        PlanetState planet = GetPlanet();
+
+        if (planet == null || planet.shipQueue == null || planet.shipQueue.Count == 0)
         {
+            lastQueueCount = 0;
             SetEmpty(true);
             return;
         }
 
-        PlanetState p = gameStateHolder.state.GetPlanet(planetId);
-        if (p == null || p.shipQueue == null || p.shipQueue.Count == 0)
-        {
-            SetEmpty(true);
-            return;
-        }
+        SetEmpty(false);
 
-        List<QueueDisplayGroup> groups = BuildGroups(p.shipQueue);
-
-        SetEmpty(groups.Count == 0);
-
-        foreach (var g in groups)
+        for (int i = 0; i < planet.shipQueue.Count; i++)
         {
             ShipQueueRowUI row = Instantiate(rowPrefab, contentParent);
             spawnedRows.Add(row);
 
-            double remaining = System.Math.Max(0, g.groupFinishTime - Time.time);
+            int index = i;
 
             row.Bind(
-                GetShipDisplayName(g.shipType),
-                g.count,
-                remaining
+                planet.shipQueue[i],
+                index,
+                CancelShipBuild
             );
+        }
+
+        lastQueueCount = planet.shipQueue.Count;
+    }
+
+    private void RefreshExistingRows()
+    {
+        PlanetState planet = GetPlanet();
+
+        if (planet == null || planet.shipQueue == null)
+            return;
+
+        for (int i = 0; i < spawnedRows.Count; i++)
+        {
+            if (spawnedRows[i] == null) continue;
+            if (i >= planet.shipQueue.Count) continue;
+
+            spawnedRows[i].UpdateDisplay(planet.shipQueue[i]);
         }
     }
 
-    private List<QueueDisplayGroup> BuildGroups(List<ShipQueueItem> queue)
+    private void CancelShipBuild(int index)
     {
-        List<QueueDisplayGroup> groups = new();
+        PlanetState planet = GetPlanet();
 
-        if (queue == null || queue.Count == 0)
-            return groups;
+        if (planet == null || planet.shipQueue == null)
+            return;
 
-        QueueDisplayGroup current = null;
+        if (index < 0 || index >= planet.shipQueue.Count)
+            return;
 
-        for (int i = 0; i < queue.Count; i++)
-        {
-            ShipQueueItem item = queue[i];
-            if (item == null) continue;
+        planet.shipQueue.RemoveAt(index);
 
-            if (current == null || current.shipType != item.shipType)
-            {
-                current = new QueueDisplayGroup
-                {
-                    shipType = item.shipType,
-                    count = 1,
-                    groupFinishTime = item.finishTime
-                };
-                groups.Add(current);
-            }
-            else
-            {
-                current.count++;
-                current.groupFinishTime = item.finishTime;
-            }
-        }
-
-        return groups;
+        Rebuild();
     }
 
     private void ClearRows()
@@ -120,18 +136,7 @@ public class ShipQueuePanelUI : MonoBehaviour
 
     private void SetEmpty(bool isEmpty)
     {
-        if (emptyStateObject) emptyStateObject.SetActive(isEmpty);
-    }
-
-    private string GetShipDisplayName(ShipType type)
-    {
-        switch (type)
-        {
-            case ShipType.Probe: return "Probe";
-            case ShipType.SmallCargo: return "Small Cargo";
-            case ShipType.LargeCargo: return "Large Cargo";
-            case ShipType.BasicFighter: return "Basic Fighter";
-            default: return type.ToString();
-        }
+        if (emptyStateObject != null)
+            emptyStateObject.SetActive(isEmpty);
     }
 }

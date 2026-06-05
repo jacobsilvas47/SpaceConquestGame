@@ -6,7 +6,10 @@ using System.Collections.Generic;
     public class ShipQueueItem
     {
         public ShipType shipType;
+        public int amount = 1;
         public double finishTime;
+        public double startTime;
+        public double durationSeconds;
     }
 
     [Serializable]

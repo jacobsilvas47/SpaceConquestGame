@@ -1,24 +1,58 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ShipQueueRowUI : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI shipNameText;
-    [SerializeField] private TextMeshProUGUI countText;
-    [SerializeField] private TextMeshProUGUI timerText;
+    [SerializeField] private TextMeshProUGUI nameText;
+    [SerializeField] private TextMeshProUGUI timeText;
+    [SerializeField] private TextMeshProUGUI percentText;
+    [SerializeField] private Image progressFill;
+    [SerializeField] private Button cancelButton;
 
-    public void Bind(string shipName, int count, double secondsRemaining)
+    private int queueIndex;
+    private System.Action<int> onCancelClicked;
+
+    public void Bind(ShipQueueItem item, int index, System.Action<int> cancelCallback)
     {
-        if (shipNameText) shipNameText.text = shipName;
-        if (countText) countText.text = count.ToString();
-        if (timerText) timerText.text = FormatTime(secondsRemaining);
+        queueIndex = index;
+        onCancelClicked = cancelCallback;
+
+        UpdateDisplay(item);
+
+        if (cancelButton)
+        {
+            cancelButton.onClick.RemoveAllListeners();
+            cancelButton.onClick.AddListener(() => onCancelClicked?.Invoke(queueIndex));
+        }
     }
 
-    private string FormatTime(double seconds)
+    public void UpdateDisplay(ShipQueueItem item)
     {
-        int total = Mathf.Max(0, Mathf.CeilToInt((float)seconds));
-        int minutes = total / 60;
-        int secs = total % 60;
-        return $"{minutes:00}:{secs:00}";
+        if (item == null) return;
+
+        string shipName = ShipDatabase.DisplayName(item.shipType);
+
+        if (nameText)
+            nameText.text = $"{ShipDatabase.DisplayName(item.shipType)} x{item.amount}";
+
+        double remaining = System.Math.Max(0, item.finishTime - Time.time);
+
+        float progress = 0f;
+
+        if (item.durationSeconds > 0)
+        {
+            double elapsed = Time.time - item.startTime;
+            progress = Mathf.Clamp01((float)(elapsed / item.durationSeconds));
+        }
+
+        if (timeText)
+            timeText.text = $"Time: {TimeFormatUtility.FormatDuration(remaining)}";
+
+        if (progressFill)
+            progressFill.fillAmount = progress;
+
+        if (percentText)
+            percentText.text = $"{Mathf.RoundToInt(progress * 100f)}%";
     }
 }
